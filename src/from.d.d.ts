@@ -14,12 +14,4 @@ export type From<T> =
         }
     }
 
-export function FROM<T>(table: Table<T>): Query<From<T>> {
-    const key = Object.keys(table)[0]
-    const x = {
-        sql: q(key),
-        columns: table,
-    }
-    // @ts-ignore
-    return new Query(x)
-}
+export type Return<T> = Query<From<T>>
