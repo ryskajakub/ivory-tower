@@ -1,5 +1,5 @@
 import { Table } from "./table"
-import { FROMM } from "./fromm"
+import { FROM } from "./from"
 import { eq } from "./sql"
 import { literal } from "./column"
 import { SELECT } from "./select"
@@ -57,7 +57,7 @@ const pets: Table<Pet> = {
 
 const q =
     SELECT((a) => { return [ a.pets.id, a.pets.owner_id ] } ,
-        FROMM(persons)
+        FROM(persons)
             .JOIN(pets, (ab) => eq(ab.persons.id, ab.pets.owner_id))
             .WHERE((a) => eq(a.persons.id, literal(2)))
             .GROUP_BY((a) => [a.persons.id])

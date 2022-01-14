@@ -1,4 +1,4 @@
-import { From } from "./fromm";
+import { From } from "./from";
 import { DisjointUnion, toObj } from "./helpers";
 import { Condition, Join, Q } from "./sql";
 import { Table } from "./table";
