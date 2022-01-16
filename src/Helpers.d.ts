@@ -21,19 +21,3 @@ export type IsUniqueTuple<A extends any[]> =
     A extends [infer First, ...infer Rest] ?
     (BNotContainsA<First, Rest> extends true ? IsUniqueTuple<Rest> : false)
     : never
-
-export function toObj<V>(input: [string, V][]): { [key: string]: V } {
-    function go(acc: { [key: string]: V }, values: [string, V][]): { [key: string]: V } {
-        if (values.length === 0) {
-            return acc
-        }
-        const value = values[0]
-        const newAcc = {
-            ...acc,
-            [value[0]]: value[1]
-        }
-        const newValues = values.slice(1)
-        return go(newAcc, newValues)
-    }
-    return go({}, input)
-}

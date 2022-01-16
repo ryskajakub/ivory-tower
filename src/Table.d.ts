@@ -7,7 +7,7 @@ export type TsType<DbType> = DbType extends Numeric ? (number | "auto") :
 
 export type Check<DbType> = TsType<DbType> extends never ? never : DbType
 
-export type Table<T> =
+export type TableType<T> =
     {
         [U in keyof T]: {
             [Col in keyof T[U]]: (null extends T[U][Col] ? { nullable: true } : {}) &

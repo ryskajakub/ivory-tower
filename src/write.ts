@@ -1,3 +1,3 @@
-import { Table } from "./table";
+// import { tabletype } from "./table";
 
-function insertRow<T>(t: Table<T>, data: T) { }
+// function insertRow<T>(t: TableType<T>, data: T) { }

@@ -8,7 +8,8 @@
             "DOM"
         ],
         "outDir": "dist",
-        "target": "ESNext"
+        "target": "ESNext",
+        "noEmit": true
     },
     "include": [
         "src/**/*"
