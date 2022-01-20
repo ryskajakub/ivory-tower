@@ -1,14 +1,34 @@
+import { NamedColumn, Column } from "./column"
+
+export type Literal = {
+    type: "literal",
+    value: any
+}
+
 export type Path = {
     type: "path",
-    path: string,
+    value: string,
 }
 
-export type Column<Db> = Path | Literal
+export type ColumnValue = Literal | Path
 
-type Literal = {
-    type: "literal",
-    value: any,
-}
+export type MapColumn<C, DbType, State extends ColumnState> =
+    C extends NamedColumn<any, any, infer Name> ? NamedColumn<DbType, State, Name>
+        : Column<DbType, State>
+
+export type Aggregable = "aggregable"
+
+export type Aggregated = "aggregated"
+
+export type Selectable = "selectable"
+
+export type SingleState = Aggregated | Selectable
+
+export type ColumnState = Aggregable | SingleState
+
+export type Parametrized = true | false
+
+export type Numeric = "smallint" | "integer"
 
 type TsType<Db> = Db extends "smallint" ? number :
     Db extends "integer" ? number :

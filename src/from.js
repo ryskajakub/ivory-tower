@@ -1,17 +1,7 @@
-import { toObj } from "./helpers"
-import { path } from "./column"
 import { fromItem } from "./sql";
 import { JoinPhaseAs } from "./joinPhase"
-
-/**
- * @param {{ [key: string]: { [key: string]: any } }} obj 
- * @returns {{ [key: string]: { [key: string]: import("./Column").Path } }}
- */
-export function replaceValueWithPath(obj) {
-    return toObj(Object.entries(obj).map(([key, value]) =>
-        [key, toObj(Object.entries(value).map(([colKey, _]) => [colKey, path(`${key}.${colKey}`)]))]
-    ))
-}
+import { replaceValueWithPath } from "./sql";
+import { GroupBy } from "./groupBy";
 
 /**
  * @template T
@@ -19,12 +9,11 @@ export function replaceValueWithPath(obj) {
  */
 
 /**
- * @template T
+ * @template {TableType<any>} T
  * @param {import("./table").Table<T>} table 
- * @returns { From<{}, import("./From").FromType<T extends TableType<infer TT> ? TT : never>> }
+ * @returns { From<{}, import("./From").FromTable<T>> }
  */
 export function FROM(table) {
-    /** @type {import("./From").FromType<T>} */
     // @ts-ignore
     const columns = replaceValueWithPath(table.def)
     // @ts-ignore
@@ -32,43 +21,51 @@ export function FROM(table) {
 }
 
 /**
- * @template {import("./From").FromType<any>} T
- * @template {import("./From").FromType<any>} U
+ * @template T
+ * @typedef { import("./Select").Selectable<T> } Selectable
  */
-export class From {
+
+/**
+ * @template {import("./From").FromTable<any>} T
+ * @template {import("./From").FromTable<any>} U
+ * @extends GroupBy<T, U>
+ * @implements { Selectable<import("./From").MakeSelectable<T & U>> }
+ */
+export class From extends GroupBy {
+
     /**
-     * @param {import("./Sql").FromItem[]} previousSqls
-     * @param {import("./Sql").FromItem} currentSql
+     * @returns { import("./From").MakeSelectable<T & U> }
+     */
+    selectable = () => {
+        // @ts-ignore
+        return {}
+    }
+
+    /**
+     * @param {import("./Sql").PreSelect} sql
      * @param {T} previousFroms 
      * @param {U} currentFrom 
      */
-    constructor(previousSqls, currentSql, previousFroms, currentFrom) {
-        /** @readonly @protected */
-        this.previousSqls = previousSqls
-        /** @readonly @protected */
-        this.currentSql = currentSql
-        /** @readonly @protected */
-        this.previousFroms = previousFroms
-        /** @readonly @protected */
-        this.currentFrom = currentFrom
+    constructor(sql, previousFroms, currentFrom) {
+        super(sql, previousFroms, currentFrom)
     }
 
     /**
      * @template V
      * @param {import("./table").Table<V>} table 
-     * @returns {JoinPhaseAs<T, U, import("./From").FromType<V>>}
+     * @returns {JoinPhaseAs<T, U, import("./From").FromTable<V>>}
      */
     JOIN = (table) => {
-        /** @type {import("./From").FromType<V>} */
+        /** @type {import("./From").FromTable<V>} */
         // @ts-ignore
         const currentJoin = replaceValueWithPath(table.def)
-        return new JoinPhaseAs(this.previousSqls, this.currentSql, this.previousFroms, this.currentFrom, table.name, currentJoin)
+        return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, table.name, currentJoin, null)
     }
 
     /**
-     * @template V
+     * @template {TableType<any>} V
      * @param {import("./table").Table<V>} table 
-     * @returns {From<import("./Helpers").DisjointUnion<U, T>, import("./From").FromType<V>>}
+     * @returns {From<import("./Helpers").DisjointUnion<U, T>, import("./From").FromTable<V>>}
      */
     item = (table) => {
         const f = FROM(table)
@@ -76,15 +73,18 @@ export class From {
             ...this.previousFroms,
             ...this.currentFrom,
         }
-        const newPreviousSqls = [...this.previousSqls, this.currentSql]
+        /** @type {import("./Sql").PreSelect} */
+        const newSql = {
+            ...this.sql,
+            froms: [...this.sql.froms, ...f.sql.froms]
+        }
         // @ts-ignore
-        return new From(newPreviousFroms, f.currentFrom, newPreviousSqls, f.currentSql)
+        return new From(newSql, newPreviousFroms, f.currentFrom)
     }
 
     toString = () => {
         return {
-            previousSqls: this.previousSqls,
-            currentSql: this.currentSql,
+            sql: this.sql,
             previousFroms: this.previousFroms,
             currentFrom: this.currentFrom,
         }

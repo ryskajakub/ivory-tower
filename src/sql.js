@@ -1,10 +1,14 @@
+import { toObj } from "./helpers"
+import { path } from "./column"
+
 /**
- * @returns {import("./Sql").Query}
+ * @returns {import("./Sql").PreSelect}
  */
 export function empty() {
     return {
-        from: [],
-        where: null
+        froms: [],
+        where: null,
+        groupBy: [],
     }
 }
 
@@ -21,9 +25,8 @@ export function fromItem(tableName) {
 
 /**
  * @template A
- * @template B
- * @param {import("./Column").Column<A>} arg1 
- * @param {import("./Column").Column<B>} arg2 
+ * @param {import("./column").Column<A, import("./Column").SingleState>} arg1 
+ * @param {import("./column").Column<A, import("./Column").SingleState>} arg2 
  * @returns {import("./Sql").Eq}
  */
 export function eq(arg1, arg2) {
@@ -32,4 +35,14 @@ export function eq(arg1, arg2) {
         arg1,
         arg2,
     }
+}
+
+/**
+ * @param {{ [key: string]: { [key: string]: any } }} obj 
+ * @returns {{ [key: string]: { [key: string]: import("./Column").Path } }}
+ */
+export function replaceValueWithPath(obj) {
+    return toObj(Object.entries(obj).map(([key, value]) =>
+        [key, toObj(Object.entries(value).map(([colKey, _]) => [colKey, path(`${key}.${colKey}`)]))]
+    ))
 }

@@ -1,6 +1,8 @@
 import { FROM } from "./from"
 import { Table } from "./table"
 import { eq } from "./sql"
+import { SELECT } from "./select"
+import { MAX } from "./functions"
 
 /**
  * @typedef {{ persons: { id: "smallint" | undefined, name: "text" | null, age: "integer" | null | undefined, address: "text", }}} Person
@@ -53,11 +55,23 @@ const petsDef = {
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
-const q =
-    FROM(persons)
-        .JOIN(pets).ON((ab) => eq(ab.persons.name, ab.pets.owner_id))
-        .JOIN(pets).AS("xxx").ON((ab) => eq(ab.xxx.owner_id, ab.pets.owner_id))
-        .toString()
+const q1 =
+    SELECT((ab) => [ab.persons.id],
+        FROM(persons)
+            // .JOIN(pets).ON((ab) => eq(ab.persons.id, ab.pets.owner_id))
+            // .JOIN(pets).AS("xxx").ON((ab) => eq(ab.xxx., ab.persons.name))
+            // .GROUP_BY((ab) => [ab.persons.id])
+    )
+
+
+
+const q2 =
+    SELECT((ab) => [ab.persons.id, MAX(ab.persons.age)],
+        FROM(persons)
+            .JOIN(pets).ON((ab) => eq(ab.persons.id, ab.pets.owner_id))
+            .JOIN(pets).AS("xxx").ON((ab) => eq(ab.xxx.owner_id, ab.persons.id))
+            .GROUP_BY((ab) => [ab.persons.id])
+    )
 
 
 /*
@@ -72,4 +86,4 @@ const q =
     )
 */
 
-console.log(JSON.stringify(q, undefined, 2))
+// console.log(JSON.stringify(q, undefined, 2))
