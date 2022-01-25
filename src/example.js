@@ -72,6 +72,10 @@ const q2 =
             .JOIN(pets).AS("xxx").ON((ab) => eq(ab.xxx.owner_id, ab.persons.id))
             .GROUP_BY((ab) => [ab.persons.id])
     )
+    .ORDER_BY(ab => [ab.age, ab.id.ASC()])
+    .LIMIT(3)
+    .OFFSET(3)
+    .AS("subquery")
 
 
 /*

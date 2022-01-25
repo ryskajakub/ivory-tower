@@ -1,5 +1,6 @@
 import { Aggregable, Aggregated, Selectable } from "./Column"
 import { NamedColumn, Column } from "./column"
+import { OrderingElement } from "./orderBy"
 
 type Disjoint<A, B> = Extract<A, B> extends never ? true : false
 
@@ -73,8 +74,15 @@ export type GroupByResult<T, V extends NamedColumn<any, any, any>[]> =
         }
     }
 
+export type MakeObj<T extends any[], Acc> = 
+    T["length"] extends 0 ? Acc : 
+    T extends [infer Col, ...infer Rest] ? 
+        Col extends NamedColumn<any, any, infer Name> ? (MakeObj<Rest, Acc & {
+            [K in Name]: OrderingElement
+        }>) : never : never
+
 export type Select<T extends NamedColumn<any, any, any>[]> = 
-    AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? T : never) : never
+    AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? MakeObj<T, {}> : never) : never
 
 type NamedColumns = [NamedColumn<any, any, "lol.lll">, NamedColumn<any, any, "p.xxx">]
 
@@ -87,3 +95,5 @@ type XXX = AllSelectableOrAggregable<[NamedColumn<any, "selectable", "lol">, Nam
 type T = "agg" | "lol"
 
 type X = T extends "agg" ? true : false
+
+type LLL = MakeObj<[NamedColumn<"text", "selectable", "lol">, NamedColumn<"text", "selectable", "lol2">], {}>

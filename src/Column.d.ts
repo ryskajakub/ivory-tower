@@ -38,3 +38,5 @@ type TsType<Db> = Db extends "smallint" ? number :
 type DbType<Ts> = Ts extends number ? "smallint" | "integer" :
     Ts extends string ? "text" :
     never
+
+export type ColumnDirection = "default" | "ASC" | "DESC"

@@ -25,3 +25,8 @@ export type Eq = {
 }
 
 export type Condition = Eq
+
+export type Ordering = {
+    field: Column<any, any>,
+    type: "ASC" | "DESC"
+}
