@@ -53,17 +53,29 @@ export class From extends GroupBy {
         super(sql, previousFroms, currentFrom)
     }
 
+    //  * @returns {JoinPhaseAs<T, U, import("./From").FromTableOrQuery<TableOrQuery>>}
+
     /**
-     * @template V
-     * @param {import("./table").Table<V>} table 
-     * @returns {JoinPhaseAs<T, U, import("./From").FromTable<V>>}
+     * @template TableOrQuery
+     * @param { TableOrQuery } table 
+     * @returns { import("./From").JoinTableOrQuery<T, U, TableOrQuery> }
      */
     JOIN = (table) => {
-        /** @type {import("./From").FromTable<V>} */
         // @ts-ignore
         const currentJoin = replaceValueWithPath(table.def)
+        // @ts-ignore
         return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, table.name, currentJoin, null)
     }
+
+    // /**
+    //  * @template V
+    //  * @param {TableOrQuery} table 
+    //  * @param {*} table 
+    //  * @returns { JoinPhaseAs<T, U, import("./From").FromTable<V>> }
+    //  */
+    // LEFT_JOIN = (table) => {
+
+    // } 
 
     /**
      * @template {TableType<any>} V

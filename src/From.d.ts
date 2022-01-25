@@ -1,6 +1,7 @@
 import { Selectable } from "./Column"
 import { Column, NamedColumn } from "./column"
 import { From } from "./from"
+import { JoinPhase, JoinPhaseAs } from "./joinPhase";
 import { SubQuery } from "./orderBy";
 import { Table } from "./table";
 
@@ -9,17 +10,10 @@ export type FromTableOrQuery<T> =
         T extends SubQuery<infer Name, infer Columns> ? (
             Name extends string ?
             FromQuery<Name, Columns>
-            : true
+            : never
         )
-        : ""
+        : never
     )
-
-export type MakeObj<T extends any[], Acc> =
-    T["length"] extends 0 ? Acc :
-    T extends [infer Col, ...infer Rest] ?
-    Col extends NamedColumn<infer DbType, infer Type, infer Name> ? (MakeObj<Rest, Acc & {
-        [K in Name]: Column<DbType, Type>
-    }>) : never : never
 
 export type FromQuery<Name extends string, Columns> =
     {
@@ -57,3 +51,16 @@ export type MakeSelectable<T extends FromTable<any>> =
 
 export type SelectablePreGroup<From1 extends From<any, any>> =
     From1 extends From<infer T, infer U> ? MakeSelectable<T & U> : never
+
+export type JoinTableOrQuery<T, U, TOrQ> =
+    TOrQ extends Table<infer TD> ?
+    (T extends FromTable<any> ?
+        U extends FromTable<any> ?
+        JoinPhaseAs<T, U, FromTable<TD>> : never : never) :
+    (
+        TOrQ extends SubQuery<infer Name, infer Columns> ?
+        Name extends string ?
+        JoinPhase<T, U, FromQuery<Name, Columns>>
+        : never
+        : never
+    )

@@ -4,6 +4,10 @@ import { OrderingElement } from "./orderBy"
 
 type Disjoint<A, B> = Extract<A, B> extends never ? true : false
 
+export type ExpandType<T> = {} & {
+    [K in keyof T]: T[K]
+}
+
 export type DisjointUnion<Obj1, Obj2> = Obj1 extends Record<string, any> ? (
     Obj2 extends Record<string, any> ? (
         Disjoint<keyof Obj1, keyof Obj2> extends true ? (Obj1 & Obj2) : never
@@ -82,7 +86,7 @@ export type MakeObj<T extends any[], Acc> =
         }>) : never : never
 
 export type Select<T extends NamedColumn<any, any, any>[]> = 
-    AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? MakeObj<T, {}> : never) : never
+    AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? ExpandType<MakeObj<T, {}>> : never) : never
 
 type NamedColumns = [NamedColumn<any, any, "lol.lll">, NamedColumn<any, any, "p.xxx">]
 
@@ -97,3 +101,17 @@ type T = "agg" | "lol"
 type X = T extends "agg" ? true : false
 
 type LLL = MakeObj<[NamedColumn<"text", "selectable", "lol">, NamedColumn<"text", "selectable", "lol2">], {}>
+
+type TTT = {
+    a: 3
+} & { 
+    b: 8
+ }
+
+type Map<T> = {
+    [K in keyof T]: T[K]
+}
+
+type X1<T> = Map<T>
+
+type L = X1<TTT>

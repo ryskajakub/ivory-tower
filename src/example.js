@@ -56,18 +56,20 @@ const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
 const q1 =
-    SELECT((ab) => [ab.persons.id, ab.persons.name],
+    SELECT((ab) => [ab.persons.id, ab.lol.owner_id],
         FROM(persons)
-            // .JOIN(pets).ON((ab) => eq(ab.persons.id, ab.pets.owner_id))
+            .JOIN(pets).AS("lol").ON((ab) => eq(ab.persons.id, ab.lol.owner_id))
             // .JOIN(pets).AS("xxx").ON((ab) => eq(ab.xxx., ab.persons.name))
             // .GROUP_BY((ab) => [ab.persons.id])
     )
-    .AS("volove")
 
-const q01 = 
-    SELECT((ab) => [ab.volove.id, ab.volove.name],
-        FROM(q1)
-    )
+    const t =
+        FROM(q1.AS("volove"))
+            .JOIN(q1.AS("ok")).ON((ab) => eq(ab.ok.id, ab.volove.id))
+
+// const q01 = 
+    // SELECT((ab) => [ab.volove.id, ab.volove.owner_id],
+    // )
 
 
 

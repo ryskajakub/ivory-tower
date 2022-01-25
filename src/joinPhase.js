@@ -4,9 +4,9 @@
 import { From } from "./from"
 
 /**
- * @template {import("./From").FromTable<any>} T
- * @template {import("./From").FromTable<any>} U
- * @template {import("./From").FromTable<any>} V
+ * @template T
+ * @template U
+ * @template V
  */
 export class JoinPhase {
     /**
@@ -61,15 +61,16 @@ export class JoinPhase {
         /** @type {import("./Sql").PreSelect} */
         const newSql = { ...this.sql, froms: [...this.sql.froms.slice(0, -1), newFrom] }
 
+        // @ts-ignore
         return new From(newSql, this.previousFroms, union)
     }
 
 }
 
 /**
- * @template {import("./From").FromTable<any>} T
- * @template {import("./From").FromTable<any>} U
- * @template {import("./From").FromTable<any>} V
+ * @template T
+ * @template U
+ * @template V
  * @extends JoinPhase<T, U, V>
  */
 export class JoinPhaseAs extends JoinPhase {
