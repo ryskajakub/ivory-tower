@@ -1,0 +1,10 @@
+- lateral joins
+- writes
+- select from subquery
+- implementation
+- transformers
+- json support
+- aggregation functions
+- left joins
+- print select
+- psql types

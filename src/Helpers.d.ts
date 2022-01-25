@@ -77,8 +77,8 @@ export type GroupByResult<T, V extends NamedColumn<any, any, any>[]> =
 export type MakeObj<T extends any[], Acc> = 
     T["length"] extends 0 ? Acc : 
     T extends [infer Col, ...infer Rest] ? 
-        Col extends NamedColumn<any, any, infer Name> ? (MakeObj<Rest, Acc & {
-            [K in Name]: OrderingElement
+        Col extends NamedColumn<infer DbType, infer State, infer Name> ? (MakeObj<Rest, Acc & {
+            [K in Name]: Column<DbType, State>
         }>) : never : never
 
 export type Select<T extends NamedColumn<any, any, any>[]> = 

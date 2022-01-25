@@ -10,8 +10,11 @@ import { GroupBy } from "./groupBy";
 
 /**
  * @template {TableType<any>} T
- * @param {import("./table").Table<T>} table 
- * @returns { From<{}, import("./From").FromTable<T>> }
+ * @template Name
+ * @template U
+ * @template TableOrQuery
+ * @param {TableOrQuery} table 
+ * @returns { From<{}, import("./From").FromTableOrQuery<TableOrQuery>> }
  */
 export function FROM(table) {
     // @ts-ignore

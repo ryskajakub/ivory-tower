@@ -61,7 +61,9 @@ export class Query extends SubQuery {
     }
 
     /**
-     * @param {string} name 
+     * @template {string} Name
+     * @param {Name} name 
+     * @returns { SubQuery<Name, T> }
      */
     AS = (name) => {
         return new SubQuery(name)

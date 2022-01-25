@@ -56,15 +56,22 @@ const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
 const q1 =
-    SELECT((ab) => [ab.persons.id],
+    SELECT((ab) => [ab.persons.id, ab.persons.name],
         FROM(persons)
             // .JOIN(pets).ON((ab) => eq(ab.persons.id, ab.pets.owner_id))
             // .JOIN(pets).AS("xxx").ON((ab) => eq(ab.xxx., ab.persons.name))
             // .GROUP_BY((ab) => [ab.persons.id])
     )
+    .AS("volove")
+
+const q01 = 
+    SELECT((ab) => [ab.volove.id, ab.volove.name],
+        FROM(q1)
+    )
 
 
 
+    /*
 const q2 =
     SELECT((ab) => [ab.persons.id, MAX(ab.persons.age)],
         FROM(persons)
@@ -76,6 +83,7 @@ const q2 =
     .LIMIT(3)
     .OFFSET(3)
     .AS("subquery")
+    */
 
 
 /*
