@@ -30,6 +30,10 @@ export type Parametrized = true | false
 
 export type Numeric = "smallint" | "integer"
 
+export type Text = "text"
+
+export type Textual = Text
+
 type TsType<Db> = Db extends "smallint" ? number :
     Db extends "integer" ? number :
     Db extends "text" ? string :
