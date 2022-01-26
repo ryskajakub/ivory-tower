@@ -32,6 +32,14 @@ export type Numeric = "smallint" | "integer"
 
 export type Text = "text"
 
+export type Date = "date"
+
+export type Time = "time"
+
+export type Timestamp = "timestamp"
+
+export type Temporal = Date | Time | Timestamp
+
 export type Textual = Text
 
 type TsType<Db> = Db extends "smallint" ? number :

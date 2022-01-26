@@ -1,8 +1,8 @@
 import { Having } from "./having"
 
 /**
- * @template {import("./From").FromTable<any>} T
- * @template {import("./From").FromTable<any>} U
+ * @template T
+ * @template U
  */
 export class GroupBy {
     /**

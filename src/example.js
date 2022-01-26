@@ -1,4 +1,4 @@
-import { FROM } from "./from"
+import { From, FROM } from "./from"
 import { Table } from "./table"
 import { eq } from "./sql"
 import { SELECT } from "./select"
@@ -64,9 +64,10 @@ const q1 =
     )
 
     const t =
-    SELECT(ab => [ab.ok.owner_id],
-        FROM(q1.AS("volove"))
-            .LEFT_JOIN(q1.AS("ok")).ON((ab) => eq(ab.ok.id, ab.volove.id))
+    SELECT(ab => [ab.persons.age],
+        FROM(persons)
+        .LATERAL_item(pets).JOIN(persons).AS("lol").ON(ab => ab.lol)
+
     )
 
 // const q01 = 

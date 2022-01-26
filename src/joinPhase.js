@@ -7,6 +7,7 @@ import { From } from "./from"
  * @template T
  * @template U
  * @template V
+ * @template {boolean} Lateral
  */
 export class JoinPhase {
     /**
@@ -33,7 +34,7 @@ export class JoinPhase {
     }
 
     /**
-     * @param {(ab: import("./Helpers").DisjointUnion<U, V>) => import("./Sql").Condition} mkCondition 
+     * @param {(ab: import("./From").On<T, U, V, Lateral>) => import("./Sql").Condition} mkCondition 
      */
     ON = (mkCondition) => {
 
@@ -71,7 +72,8 @@ export class JoinPhase {
  * @template T
  * @template U
  * @template V
- * @extends JoinPhase<T, U, V>
+ * @template {boolean} Lateral
+ * @extends JoinPhase<T, U, V, Lateral>
  */
 export class JoinPhaseAs extends JoinPhase {
     /**
@@ -89,7 +91,7 @@ export class JoinPhaseAs extends JoinPhase {
     /**
      * @template {string} Name
      * @param {Name} name
-     * @returns {JoinPhase<T, U, import("./From").RenameFrom<V, Name>>}
+     * @returns {JoinPhase<T, U, import("./From").RenameFrom<V, Name>, Lateral>}
      */
     AS = (name) => {
         const key0 = Object.keys(this.currentJoin)[0]

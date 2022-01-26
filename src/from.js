@@ -9,12 +9,9 @@ import { GroupBy } from "./groupBy";
  */
 
 /**
- * @template {TableType<any>} T
- * @template Name
- * @template U
  * @template TableOrQuery
  * @param {TableOrQuery} table 
- * @returns { From<{}, import("./From").FromTableOrQuery<TableOrQuery>> }
+ * @returns { From<{}, import("./From").FromTableOrQuery<TableOrQuery>, false> }
  */
 export function FROM(table) {
     // @ts-ignore
@@ -29,8 +26,9 @@ export function FROM(table) {
  */
 
 /**
- * @template {import("./From").FromTable<any>} T
- * @template {import("./From").FromTable<any>} U
+ * @template T
+ * @template U
+ * @template {boolean} Lateral
  * @extends GroupBy<T, U>
  * @implements { Selectable<import("./From").MakeSelectable<T & U>> }
  */
@@ -58,7 +56,7 @@ export class From extends GroupBy {
     /**
      * @template TableOrQuery
      * @param { TableOrQuery } table 
-     * @returns { import("./From").JoinTableOrQuery<T, U, TableOrQuery, false> }
+     * @returns { import("./From").JoinTableOrQuery<T, U, TableOrQuery, false, Lateral> }
      */
     JOIN = (table) => {
         // @ts-ignore
@@ -70,7 +68,7 @@ export class From extends GroupBy {
     /**
      * @template TableOrQuery
      * @param { TableOrQuery } table 
-     * @returns { import("./From").JoinTableOrQuery<T, U, TableOrQuery, true> }
+     * @returns { import("./From").JoinTableOrQuery<T, U, TableOrQuery, true, Lateral> }
      */
     LEFT_JOIN = (table) => {
         // @ts-ignore
@@ -78,9 +76,9 @@ export class From extends GroupBy {
     } 
 
     /**
-     * @template {TableType<any>} V
-     * @param {import("./table").Table<V>} table 
-     * @returns {From<import("./Helpers").DisjointUnion<U, T>, import("./From").FromTable<V>>}
+     * @template TableOrQuery
+     * @param {TableOrQuery} table 
+     * @returns {From<import("./Helpers").DisjointUnion<U, T>, import("./From").FromTableOrQuery<TableOrQuery>,false>}
      */
     item = (table) => {
         const f = FROM(table)
@@ -95,6 +93,16 @@ export class From extends GroupBy {
         }
         // @ts-ignore
         return new From(newSql, newPreviousFroms, f.currentFrom)
+    }
+
+    /**
+     * @template TableOrQuery
+     * @param {TableOrQuery} table 
+     * @returns {From<import("./Helpers").DisjointUnion<U, T>, import("./From").FromTableOrQuery<TableOrQuery>,true>}
+     */
+    LATERAL_item = (table) => {
+        // @ts-ignore
+        return {}
     }
 
     toString = () => {

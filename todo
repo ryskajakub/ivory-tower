@@ -1,4 +1,4 @@
-- lateral joins
+# lateral joins
 - writes
 # select from subquery
 - implementation
@@ -8,4 +8,5 @@
 # functions
 # left joins
 - print select
-- psql types
+# psql types
+# dependency on lateral queries
