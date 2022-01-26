@@ -1,4 +1,4 @@
-import { Selectable } from "./Column"
+import { DbType, Selectable } from "./Column"
 import { Column, NamedColumn } from "./column"
 import { From } from "./from"
 import { JoinPhase, JoinPhaseAs } from "./joinPhase";
@@ -15,6 +15,14 @@ export type FromTableOrQuery<T> =
         : never
     )
 
+export type Nullify<T> =
+    {
+        [U in keyof T]: {
+            [Col in keyof T[U]]: T[U][Col] extends Column<infer DbType, infer State> ?
+                Column<DbType | null, State> : never
+        }
+    }
+
 export type FromQuery<Name extends string, Columns> =
     {
         [N in Name]: Columns
@@ -27,17 +35,13 @@ export type FromTable<T extends { [key1: string]: { [key2: string]: { type: any 
         }
     }
 
-export type FromTableAs<T extends { [key1: string]: { [key2: string]: { type: any } } }, As extends string> =
+export type FromTableAs<T, As extends string> =
     {
-        [U in keyof T as As]: {
-            [Col in keyof T[U]]: Column<Exclude<T[U][Col]["type"], undefined>, Selectable>
-        }
+        [U in keyof T as As]: T[U]
     }
 
-export type RenameFrom<T extends FromTable<any>, As extends string> =
-    T extends FromTable<infer U> ?
-    FromTableAs<U, As>
-    : never
+export type RenameFrom<T, As extends string> =
+    FromTableAs<T, As>
 
 export type MakeSelectable<T extends FromTable<any>> =
     {
@@ -52,15 +56,15 @@ export type MakeSelectable<T extends FromTable<any>> =
 export type SelectablePreGroup<From1 extends From<any, any>> =
     From1 extends From<infer T, infer U> ? MakeSelectable<T & U> : never
 
-export type JoinTableOrQuery<T, U, TOrQ> =
+export type JoinTableOrQuery<T, U, TOrQ, IsLeftJoin> =
     TOrQ extends Table<infer TD> ?
     (T extends FromTable<any> ?
         U extends FromTable<any> ?
-        JoinPhaseAs<T, U, FromTable<TD>> : never : never) :
+        JoinPhaseAs<T, U, IsLeftJoin extends true ? Nullify<FromTable<TD>> : FromTable<TD>> : never : never) :
     (
         TOrQ extends SubQuery<infer Name, infer Columns> ?
         Name extends string ?
-        JoinPhase<T, U, FromQuery<Name, Columns>>
+        JoinPhase<T, U, IsLeftJoin extends true ? Nullify<FromQuery<Name, Columns>> : FromQuery<Name, Columns>>
         : never
         : never
     )

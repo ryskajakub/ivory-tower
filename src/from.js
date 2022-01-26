@@ -58,7 +58,7 @@ export class From extends GroupBy {
     /**
      * @template TableOrQuery
      * @param { TableOrQuery } table 
-     * @returns { import("./From").JoinTableOrQuery<T, U, TableOrQuery> }
+     * @returns { import("./From").JoinTableOrQuery<T, U, TableOrQuery, false> }
      */
     JOIN = (table) => {
         // @ts-ignore
@@ -67,15 +67,15 @@ export class From extends GroupBy {
         return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, table.name, currentJoin, null)
     }
 
-    // /**
-    //  * @template V
-    //  * @param {TableOrQuery} table 
-    //  * @param {*} table 
-    //  * @returns { JoinPhaseAs<T, U, import("./From").FromTable<V>> }
-    //  */
-    // LEFT_JOIN = (table) => {
-
-    // } 
+    /**
+     * @template TableOrQuery
+     * @param { TableOrQuery } table 
+     * @returns { import("./From").JoinTableOrQuery<T, U, TableOrQuery, true> }
+     */
+    LEFT_JOIN = (table) => {
+        // @ts-ignore
+        return {};
+    } 
 
     /**
      * @template {TableType<any>} V

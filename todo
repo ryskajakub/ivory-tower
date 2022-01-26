@@ -6,6 +6,6 @@
 # json support
 # aggregation functions
 # functions
-- left joins
+# left joins
 - print select
 - psql types
