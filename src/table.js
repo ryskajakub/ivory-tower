@@ -1,9 +1,9 @@
 /**
- * @template {import("./Table").TableType<any>} T 
+ * @template T
  */
 export class Table {
     /**
-     * @param {T} def
+     * @param {import("./Table").TableType<T>} def
      */
     constructor(def) {
         const name = Object.keys(def)[0]

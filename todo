@@ -9,4 +9,4 @@
 # left joins
 - print select
 # psql types
-# dependency on lateral queries
+- dependency on lateral queries

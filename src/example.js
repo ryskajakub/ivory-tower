@@ -3,13 +3,14 @@ import { Table } from "./table"
 import { eq } from "./sql"
 import { SELECT } from "./select"
 import { MAX } from "./functions"
+import { insertRow } from "./write"
 
 /**
  * @typedef {{ persons: { id: "smallint" | undefined, name: "text" | null, age: "integer" | null | undefined, address: "text", }}} Person
  */
 
 /**
- * @typedef {{ pets: { id: "smallint" | undefined, owner_id: "smallint", } }} Pet
+ * @typedef {{ pets: { id: "smallint" | undefined, owner_id: "smallint" } }} Pet
  */
 
 /**
@@ -54,6 +55,8 @@ const petsDef = {
 
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
+
+insertRow(persons, {})
 
 const q1 =
     SELECT((ab) => [ab.persons.address, ab.lol.owner_id, ab.lol.id],
