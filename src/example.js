@@ -56,22 +56,20 @@ const petsDef = {
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
-insertRow(persons, {})
+insertRow(persons, { name: "franta", address: "doma" })
 
 const q1 =
-    SELECT((ab) => [ab.persons.address, ab.lol.owner_id, ab.lol.id],
+    SELECT((ab) => [ab.persons.address, ab.pets.owner_id, ab.pets.id],
         FROM(persons)
-            .LEFT_JOIN(pets).AS("lol").ON((ab) => eq(ab.persons.id, ab.lol.id))
-            // .JOIN(pets).AS("xxx").ON((ab) => eq(ab.xxx., ab.persons.name))
-            // .GROUP_BY((ab) => [ab.persons.id])
+            .LEFT_JOIN(pets).ON((ab) => eq(ab.persons.id, ab.pets.owner_id))
     )
 
-    const t =
-    SELECT(ab => [ab.persons.age],
-        FROM(persons)
-        .LATERAL_item(pets).JOIN(persons).AS("lol").ON(ab => ab.lol)
+    // const t =
+    // SELECT(ab => [ab.persons.age],
+    //     FROM(persons)
+    //         .JOIN(pets).ON(ab => ab.persons.)
 
-    )
+    // )
 
 // const q01 = 
     // SELECT((ab) => [ab.volove.id, ab.volove.owner_id],

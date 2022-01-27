@@ -28,10 +28,10 @@ export type FromQuery<Name extends string, Columns> =
         [N in Name]: Columns
     }
 
-export type FromTable<T extends { [key1: string]: { [key2: string]: { type: any } } }> =
+export type FromTable<T> =
     {
         [U in keyof T]: {
-            [Col in keyof T[U]]: Column<Exclude<T[U][Col]["type"], undefined>, Selectable>
+            [Col in keyof T[U]]: Column<Exclude<T[U][Col], undefined>, Selectable>
         }
     }
 
