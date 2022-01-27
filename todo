@@ -1,5 +1,5 @@
 # lateral joins
-- writes
+# writes
 # select from subquery
 - implementation
 - transformers

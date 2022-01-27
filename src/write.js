@@ -1,4 +1,3 @@
-import { TableType } from "./Table";
 import { Table } from "./table"
 
 /**
