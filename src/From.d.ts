@@ -73,3 +73,5 @@ export type On<PreviousFrom, CurrentFrom, CurrentJoin, Lateral extends boolean> 
     Lateral extends true ?
     DisjointUnion<PreviousFrom, DisjointUnion<CurrentFrom, CurrentJoin>> :
     DisjointUnion<CurrentFrom, CurrentJoin> 
+
+export type JoinType = "left" | "inner"

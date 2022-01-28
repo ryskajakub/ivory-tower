@@ -10,10 +10,11 @@
   "scripts": {
     "incremental": "tsc --incremental",
     "watch": "nodemon",
-    "run": "node src/framework.js"
+    "run": "node --es-module-specifier-resolution=node src/example.js"
   },
   "type": "module",
   "dependencies": {
+    "@types/pg": "^8.6.4",
     "pg": "^8.7.1"
   }
 }

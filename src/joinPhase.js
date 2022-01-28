@@ -1,6 +1,3 @@
-// import { toObj } from "./helpers"
-// import { path } from "./column"
-// import { TableToFrom } from "./Table"
 import { From } from "./from"
 
 /**
@@ -11,14 +8,15 @@ import { From } from "./from"
  */
 export class JoinPhase {
     /**
-     * @param {import("./Sql").PreSelect} sql
+     * @param {import("./Sql").SelectQuery} sql
      * @param {T} previousFroms 
      * @param {U} currentFrom 
      * @param {string} tableName
      * @param {V} currentJoin
      * @param {string | null} as
+     * @param { import("./From").JoinType } joinType
      */
-    constructor(sql, previousFroms, currentFrom, tableName, currentJoin, as) {
+    constructor(sql, previousFroms, currentFrom, tableName, currentJoin, as, joinType) {
         /** @readonly @protected */
         this.sql = sql
         /** @readonly @protected */
@@ -31,6 +29,8 @@ export class JoinPhase {
         this.currentJoin = currentJoin
         /** @readonly @protected */
         this.as = as
+        /** @readonly @protected */
+        this.joinType = joinType
     }
 
     /**
@@ -53,13 +53,14 @@ export class JoinPhase {
             tableName: this.tableName,
             on: onResult,
             as: this.as,
+            type: this.joinType,
         }
 
         /** @type {import("./Sql").FromItem } */
         const currentFrom = this.sql.froms[this.sql.froms.length - 1]
         /** @type {import("./Sql").FromItem} */
         const newFrom = { ...currentFrom, joins: [...currentFrom.joins, newJoin] }
-        /** @type {import("./Sql").PreSelect} */
+        /** @type {import("./Sql").SelectQuery} */
         const newSql = { ...this.sql, froms: [...this.sql.froms.slice(0, -1), newFrom] }
 
         // @ts-ignore
@@ -77,15 +78,16 @@ export class JoinPhase {
  */
 export class JoinPhaseAs extends JoinPhase {
     /**
-     * @param {import("./Sql").PreSelect} sql
+     * @param {import("./Sql").SelectQuery} sql
      * @param {T} previousFroms 
      * @param {U} currentFrom 
      * @param {string} tableName
      * @param {V} currentJoin
      * @param {string | null} as
+     * @param { import("./From").JoinType } joinType
      */
-    constructor(sql, previousFroms, currentFrom, tableName, currentJoin, as) {
-        super(sql, previousFroms, currentFrom, tableName, currentJoin, as)
+    constructor(sql, previousFroms, currentFrom, tableName, currentJoin, as, joinType) {
+        super(sql, previousFroms, currentFrom, tableName, currentJoin, as, joinType)
     }
 
     /**
@@ -95,12 +97,14 @@ export class JoinPhaseAs extends JoinPhase {
      */
     AS = (name) => {
         const key0 = Object.keys(this.currentJoin)[0]
+
         const newCurrentJoin = {
             // @ts-ignore
-            [name]: this.currentJoin(key0)
+            [name]: this.currentJoin[key0]
         }
+
         // @ts-ignore
-        return new JoinPhase(this.previousSqls, this.currentSql, this.previousFroms, this.currentFrom, this.tableName, newCurrentJoin, name)
+        return new JoinPhase(this.sql, this.previousFroms, this.currentFrom, this.tableName, newCurrentJoin, name, this.joinType)
     }
 
 }

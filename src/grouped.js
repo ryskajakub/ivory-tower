@@ -9,7 +9,7 @@
  */
 export class Grouped {
     /**
-     * @param {import("./Sql").PreSelect} sql
+     * @param {import("./Sql").SelectQuery} sql
      * @param {T} group
      */
     constructor(sql, group) {

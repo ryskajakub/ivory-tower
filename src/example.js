@@ -1,6 +1,6 @@
 import { From, FROM } from "./from"
 import { Table } from "./table"
-import { eq } from "./sql"
+import { eq as eq } from "./sql"
 import { SELECT } from "./select"
 import { MAX } from "./functions"
 import { insertRow } from "./write"
@@ -56,13 +56,19 @@ const petsDef = {
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
-insertRow(persons, { name: "franta", address: "doma" })
+// insertRow(persons, { name: "franta", address: "doma" })
 
 const q1 =
-    SELECT((ab) => [ab.persons.address, ab.pets.owner_id, ab.pets.id],
+    // SELECT((ab) => [ab.persons.address, ab.pets.owner_id, ab.pets.id],
         FROM(persons)
-            .LEFT_JOIN(pets).ON((ab) => eq(ab.persons.id, ab.pets.owner_id))
-    )
+            .JOIN(pets).AS("p2").ON((ab) => eq(ab.persons.id, ab.p2.owner_id))
+            .LEFT_JOIN(pets).AS("p").ON(ab => eq(ab.p.id, ab.p.id))
+        .item(pets)
+        .WHERE(ab => eq(ab.persons.id, ab.pets.owner_id))
+        .GROUP_BY(ab => [ab.pets.id])
+    // )
+
+// console.log(q1.asString())
 
     // const t =
     // SELECT(ab => [ab.persons.age],

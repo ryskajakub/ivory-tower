@@ -9,7 +9,8 @@
         ],
         "outDir": "dist",
         "target": "ESNext",
-        "noEmit": true
+        "noEmit": true,
+        "module": "ESNext"
     },
     "include": [
         "src/**/*"

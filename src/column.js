@@ -4,17 +4,17 @@
  */
 export class Column {
     /**
-     * @param {DbType} t 
-     * @param {State} u 
-     * @param {import("./Column").ColumnValue} v 
+     * @param {DbType} dbType 
+     * @param {State} state 
+     * @param {import("./Column").ColumnValue} value 
      */
-    constructor(t, u, v) {
+    constructor(dbType, state, value) {
         /* @readonly @protected */
-        this.t = t
+        this.t = dbType
         /* @readonly @protected */
-        this.u = u
+        this.u = state
         /* @readonly @protected */
-        this.v = v
+        this.v = value
     }
 
     /**
@@ -44,13 +44,13 @@ export class Column {
  */
 export class NamedColumn extends Column {
     /**
-     * @param {DbType} t 
-     * @param {State} u 
-     * @param {import("./Column").ColumnValue} v 
+     * @param {DbType} dbType 
+     * @param {State} state 
+     * @param {import("./Column").ColumnValue} value 
      * @param {Name} name
      */
-    constructor(t, u, v, name) {
-        super(t, u, v)
+    constructor(dbType, state, value, name) {
+        super(dbType, state, value)
         /* @readonly */
         this.name = name
     }

@@ -6,7 +6,7 @@ import { Having } from "./having"
  */
 export class GroupBy {
     /**
-     * @param {import("./Sql").PreSelect} sql
+     * @param {import("./Sql").SelectQuery} sql
      * @param {T} previousFroms 
      * @param {U} currentFrom 
      */
@@ -18,8 +18,6 @@ export class GroupBy {
         /** @readonly @protected */
         this.currentFrom = currentFrom
     }
-
-    //  * @returns { Having<import("./Helpers").GroupBy<import("./Helpers").NamedFroms<import("./Helpers").DisjointUnion<T, U>>, V>> }
 
     /**
      * @template {[import("./column").NamedColumn<any, any, any>, ...import("./column").NamedColumn<any, any, any>[]]} V
@@ -33,13 +31,62 @@ export class GroupBy {
         }
         // @ts-ignore
         const fields = mkFields(union)
+
         const paths = fields.map(c => c.v.value)
         const newSql = {
             ...this.sql,
             groupBy: paths,
         }
+
         // @ts-ignore
         return new Having(newSql, union)
     }
 
+    asString = () => {
+        return JSON.stringify({
+            sql: this.sql,
+            previousFroms: this.previousFroms,
+            currentFrom: this.currentFrom,
+        }, undefined, 2)
+    }
+
+}
+
+/**
+ * @template T
+ * @template U
+ * @extends GroupBy<T, U>
+ */
+export class Where extends GroupBy {
+
+    /**
+     * @param {import("./Sql").SelectQuery} sql
+     * @param {T} previousFroms 
+     * @param {U} currentFrom 
+     */
+    constructor(sql, previousFroms, currentFrom) {
+        super(sql, previousFroms, currentFrom)
+    }
+
+    /**
+     * @param {(ab: DisjointUnion<T, U>) => import("./Sql").Condition} mkCondition 
+     */
+    WHERE = (mkCondition) => {
+        const union = {
+            ...this.previousFroms,
+            ...this.currentFrom,
+        }
+
+        // @ts-ignore
+        const conditionResult = mkCondition(union)
+
+        /** @type {import("./Sql").SelectQuery} */
+        const newSql = {
+            ...this.sql,
+            where: conditionResult
+        }
+
+        return new GroupBy(newSql, this.previousFroms, this.currentFrom)
+
+    }
 }

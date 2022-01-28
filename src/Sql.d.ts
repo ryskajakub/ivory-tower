@@ -1,10 +1,12 @@
 import { SingleState } from "./Column"
 import { Column } from "./column"
+import { JoinType } from "./From"
 
 export type Join = Readonly<{
     tableName: string,
     on: Condition,
     as: string | null,
+    type: JoinType,
 }>
 
 export type FromItem = Readonly<{
@@ -12,7 +14,7 @@ export type FromItem = Readonly<{
     joins: readonly Join[],
 }>
 
-export type PreSelect = Readonly<{
+export type SelectQuery = Readonly<{
     froms: readonly FromItem[],
     where: Condition | null,
     groupBy: readonly string[],

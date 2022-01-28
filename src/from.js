@@ -1,7 +1,8 @@
-import { fromItem } from "./sql";
+import { empty, fromItem } from "./sql";
 import { JoinPhaseAs } from "./joinPhase"
 import { replaceValueWithPath } from "./sql";
-import { GroupBy } from "./groupBy";
+import { Where } from "./groupBy";
+import { Table } from "./table";
 
 /**
  * @template T
@@ -14,10 +15,15 @@ import { GroupBy } from "./groupBy";
  * @returns { From<{}, import("./From").FromTableOrQuery<TableOrQuery>, false> }
  */
 export function FROM(table) {
+    const [columns, name] = table instanceof Table ?
+        [replaceValueWithPath(table.def), table.name] : [null, ""]
+    /** @type { import("./Sql").SelectQuery } */
+    const sql = {
+        ...empty(),
+        froms: [fromItem(name)]
+    }
     // @ts-ignore
-    const columns = replaceValueWithPath(table.def)
-    // @ts-ignore
-    return new From([], fromItem(table.name), {}, columns)
+    return new From(sql, {}, columns)
 }
 
 /**
@@ -29,10 +35,10 @@ export function FROM(table) {
  * @template T
  * @template U
  * @template {boolean} Lateral
- * @extends GroupBy<T, U>
+ * @extends Where<T, U>
  * @implements { Selectable<import("./From").MakeSelectable<T & U>> }
  */
-export class From extends GroupBy {
+export class From extends Where {
 
     /**
      * @returns { import("./From").MakeSelectable<T & U> }
@@ -43,7 +49,7 @@ export class From extends GroupBy {
     }
 
     /**
-     * @param {import("./Sql").PreSelect} sql
+     * @param {import("./Sql").SelectQuery} sql
      * @param {T} previousFroms 
      * @param {U} currentFrom 
      */
@@ -62,7 +68,7 @@ export class From extends GroupBy {
         // @ts-ignore
         const currentJoin = replaceValueWithPath(table.def)
         // @ts-ignore
-        return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, table.name, currentJoin, null)
+        return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, table.name, currentJoin, null, "inner")
     }
 
     /**
@@ -72,8 +78,10 @@ export class From extends GroupBy {
      */
     LEFT_JOIN = (table) => {
         // @ts-ignore
-        return {};
-    } 
+        const currentJoin = replaceValueWithPath(table.def)
+        // @ts-ignore
+        return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, table.name, currentJoin, null, "left")
+    }
 
     /**
      * @template TableOrQuery
@@ -86,7 +94,7 @@ export class From extends GroupBy {
             ...this.previousFroms,
             ...this.currentFrom,
         }
-        /** @type {import("./Sql").PreSelect} */
+        /** @type {import("./Sql").SelectQuery} */
         const newSql = {
             ...this.sql,
             froms: [...this.sql.froms, ...f.sql.froms]
@@ -103,13 +111,5 @@ export class From extends GroupBy {
     LATERAL_item = (table) => {
         // @ts-ignore
         return {}
-    }
-
-    toString = () => {
-        return {
-            sql: this.sql,
-            previousFroms: this.previousFroms,
-            currentFrom: this.currentFrom,
-        }
     }
 }
