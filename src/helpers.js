@@ -23,3 +23,12 @@ export function toObj(input) {
     }
     return go({}, input)
 }
+
+/**
+ * @param { {[key: string]: any } } p
+ * @param { (key: string, value: any) => any } f 
+ * @returns { {[key: string]: any} }
+ */
+export function mapOneLevel(p, f) {
+    return toObj(Object.entries(p).map(([colKey, colValue]) => [colKey, f(colKey, colValue) ]))
+}

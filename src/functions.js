@@ -1,4 +1,4 @@
-import { NamedColumn, Column } from "./column"
+import { NamedColumn, Column, literal } from "./column"
 
 /**
  * @template T
@@ -9,6 +9,15 @@ import { NamedColumn, Column } from "./column"
 export function MAX(column) {
     // @ts-ignore
     return {}
+}
+
+/**
+ * @param { NamedColumn<"smallint", "aggregable", any> } column 
+ * @returns { Column<"smallint", "aggregated"> }
+ */
+export function simple_MAX(column) {
+    const value = literal(`MAX(${column.value.value})`)
+    return new Column("smallint", "aggregated", value)
 }
 
 /**

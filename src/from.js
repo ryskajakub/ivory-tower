@@ -43,9 +43,13 @@ export class From extends Where {
     /**
      * @returns { import("./From").MakeSelectable<T & U> }
      */
-    selectable = () => {
+    getSelectable = () => {
         // @ts-ignore
         return {}
+    }
+
+    getSql = () => {
+        return this.sql
     }
 
     /**

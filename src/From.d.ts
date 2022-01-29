@@ -2,7 +2,7 @@ import { DbType, Selectable } from "./Column"
 import { Column, NamedColumn } from "./column"
 import { From } from "./from"
 import { JoinPhase, JoinPhaseAs } from "./joinPhase";
-import { SubQuery } from "./orderBy";
+import { FinalOrderingElement, SubQuery } from "./orderBy";
 import { Table } from "./table";
 
 export type FromTableOrQuery<T> =
@@ -75,3 +75,8 @@ export type On<PreviousFrom, CurrentFrom, CurrentJoin, Lateral extends boolean> 
     DisjointUnion<CurrentFrom, CurrentJoin> 
 
 export type JoinType = "left" | "inner"
+
+export type MakeOrderingElements<T> =
+    {
+        [Col in keyof T]: FinalOrderingElement
+    }

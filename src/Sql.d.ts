@@ -1,4 +1,4 @@
-import { SingleState } from "./Column"
+import { ColumnDirection, SingleState } from "./Column"
 import { Column } from "./column"
 import { JoinType } from "./From"
 
@@ -14,10 +14,22 @@ export type FromItem = Readonly<{
     joins: readonly Join[],
 }>
 
+export type Field = Readonly<{
+    expression: string,
+    as: null | string
+}>
+
+export type Order = {
+    field: string,
+    direction: ColumnDirection,
+}
+
 export type SelectQuery = Readonly<{
     froms: readonly FromItem[],
     where: Condition | null,
     groupBy: readonly string[],
+    fields: readonly Field[],
+    order: readonly Order[]
 }>
 
 export type Eq = {

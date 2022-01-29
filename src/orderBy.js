@@ -1,3 +1,4 @@
+import { toObj } from "./helpers"
 
 export class FinalOrderingElement {
     /**
@@ -5,9 +6,9 @@ export class FinalOrderingElement {
      * @param {import("./column").Column<any, any>} field 
      */
     constructor(field, direction) {
-        /** @protected @readonly */
+        /** @readonly */
         this.field = field;
-        /** @protected @readonly */
+        /** @readonly */
         this.direction = direction;
     }
 }
@@ -42,9 +43,15 @@ export class OrderingElement extends FinalOrderingElement {
  */
 export class SubQuery {
     /**
+     * @param {import("./Sql").SelectQuery} sql
+     * @param {T} columns 
      * @param {Name} name 
      */
-    constructor(name) {
+    constructor(sql, columns, name) {
+        /** @readonly @protected */
+        this.sql = sql
+        /** @readonly @protected */
+        this.columns = columns
         /** @readonly @protected */
         this.name = name
     }
@@ -56,8 +63,12 @@ export class SubQuery {
  */
 export class Query extends SubQuery {
 
-    constructor() {
-        super(null)
+    /**
+     * @param {import("./Sql").SelectQuery} sql
+     * @param {T} columns 
+     */
+    constructor(sql, columns) {
+        super(sql, columns, null)
     }
 
     /**
@@ -66,7 +77,7 @@ export class Query extends SubQuery {
      * @returns { SubQuery<Name, T> }
      */
     AS = (name) => {
-        return new SubQuery(name)
+        return new SubQuery(this.sql, this.columns, name)
     }
 }
 
@@ -75,6 +86,15 @@ export class Query extends SubQuery {
  * @extends Query<T>
  */
 export class Offset extends Query {
+
+    /**
+     * @param {import("./Sql").SelectQuery} sql
+     * @param {T} columns 
+     */
+    constructor(sql, columns) {
+        super(sql, columns)
+    }
+
     /**
      * @param {number} ab 
      * @returns {Query<T>}
@@ -90,6 +110,15 @@ export class Offset extends Query {
  * @extends {Offset<T>}
  */
 export class Limit extends Offset {
+
+    /**
+     * @param {import("./Sql").SelectQuery} sql
+     * @param {T} columns 
+     */
+    constructor(sql, columns) {
+        super(sql, columns)
+    }
+
     /**
      * @param {number} ab 
      * @returns {Offset<T>}
@@ -105,12 +134,36 @@ export class Limit extends Offset {
  * @extends Limit<T>
  */
 export class OrderBy extends Limit {
+
     /**
-     * @param {(x: T) => FinalOrderingElement[]} ab 
+     * @param {import("./Sql").SelectQuery} sql
+     * @param {T} columns 
+     */
+    constructor(sql, columns) {
+        super(sql, columns)
+    }
+
+    /**
+     * @param {(x: import("./From").MakeOrderingElements<T>) => FinalOrderingElement[]} ab 
      * @returns {Limit<T>}
      */
     ORDER_BY = (ab) => {
+
+        /** @type { {[key: string]: OrderingElement} } */
+        const orderingElementsInput = toObj(Object.entries(this.columns).map(([colKey, colValue]) => [colKey, 
+            new OrderingElement(colValue)
+        ]))
+
         // @ts-ignore
-        return {};
+        const orderingElements = ab(orderingElementsInput)
+        /** @type { import("./Sql").Order[] } */
+        const order = orderingElements.map(oe => ({ field: `${oe.field.value.value}`, direction: oe.direction }))
+
+        const newSql = {
+            ...this.sql,
+            order
+        }
+
+        return new Limit(newSql, this.columns)
     }
 }

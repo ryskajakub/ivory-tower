@@ -19,10 +19,13 @@ export class Grouped {
         this.group = group
     }
 
-    /**
-     * @returns { T }
-     */
-    selectable = () => {
-        return this.group
+    getSql = () => this.sql
+    getSelectable = () => this.group 
+
+    asString = () => {
+        return JSON.stringify({
+            sql: this.sql,
+            currentFrom: this.group,
+        }, undefined, 2)
     }
 }

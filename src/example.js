@@ -1,9 +1,8 @@
-import { From, FROM } from "./from"
+import { FROM } from "./from"
 import { Table } from "./table"
 import { eq as eq } from "./sql"
 import { SELECT } from "./select"
-import { MAX } from "./functions"
-import { insertRow } from "./write"
+import { simple_MAX } from "./functions"
 
 /**
  * @typedef {{ persons: { id: "smallint" | undefined, name: "text" | null, age: "integer" | null | undefined, address: "text", }}} Person
@@ -59,16 +58,17 @@ const pets = new Table(petsDef)
 // insertRow(persons, { name: "franta", address: "doma" })
 
 const q1 =
-    // SELECT((ab) => [ab.persons.address, ab.pets.owner_id, ab.pets.id],
+    SELECT((ab) => [ab.pets.id, simple_MAX(ab.pets.owner_id).AS("owner_id_max")],
         FROM(persons)
             .JOIN(pets).AS("p2").ON((ab) => eq(ab.persons.id, ab.p2.owner_id))
             .LEFT_JOIN(pets).AS("p").ON(ab => eq(ab.p.id, ab.p.id))
         .item(pets)
         .WHERE(ab => eq(ab.persons.id, ab.pets.owner_id))
         .GROUP_BY(ab => [ab.pets.id])
-    // )
+        )
+    .ORDER_BY(ab => [ab.id])
 
-// console.log(q1.asString())
+console.log(JSON.stringify(q1, undefined, 2))
 
     // const t =
     // SELECT(ab => [ab.persons.age],

@@ -9,6 +9,8 @@ export function empty() {
         froms: [],
         where: null,
         groupBy: [],
+        fields: [],
+        order: []
     }
 }
 

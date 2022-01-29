@@ -1,5 +1,6 @@
-import { PreSelect } from "./Sql";
+import { SelectQuery } from "./Sql";
 
 export interface Selectable<T> {
-    selectable: () => T
+    getSelectable: () => T
+    getSql: () => SelectQuery
 }

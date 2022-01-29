@@ -1,4 +1,6 @@
+import { Column, NamedColumn } from "./column"
 import { Having } from "./having"
+import { mapOneLevel } from "./helpers"
 
 /**
  * @template T
@@ -25,14 +27,24 @@ export class GroupBy {
      * @returns { import("./having").Having<import("./Helpers").GroupByResult<import("./Helpers").NamedFroms<import("./Helpers").DisjointUnion<T, U>>, V>> }
      */
     GROUP_BY(mkFields) {
-        const union = {
+        const unionOfColumns = {
             ...this.currentFrom,
             ...this.previousFroms,
         }
+
+        /** @type { (name: string, c: Column<any, any>) => NamedColumn<any, any, any> } */
+        const toNamedColumn = (name, c) => {
+            return c.AS(name)
+        }
+
+        const union = mapOneLevel(unionOfColumns, (_key, obj) => 
+            mapOneLevel(obj, (name, c) => toNamedColumn(name, c))
+        )
+
         // @ts-ignore
         const fields = mkFields(union)
 
-        const paths = fields.map(c => c.v.value)
+        const paths = fields.map(c => c.value.value)
         const newSql = {
             ...this.sql,
             groupBy: paths,

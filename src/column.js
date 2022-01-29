@@ -10,11 +10,11 @@ export class Column {
      */
     constructor(dbType, state, value) {
         /* @readonly @protected */
-        this.t = dbType
+        this.dbType = dbType
         /* @readonly @protected */
-        this.u = state
+        this.state = state
         /* @readonly @protected */
-        this.v = value
+        this.value = value
     }
 
     /**
@@ -23,7 +23,7 @@ export class Column {
      * @returns {NamedColumn<DbType, State, As>}
      */
     AS = (as) => {
-        return new NamedColumn(this.t, this.u, this.v, as)
+        return new NamedColumn(this.dbType, this.state, this.value, as)
     }
 
     /**
@@ -31,7 +31,7 @@ export class Column {
      * @returns { Column<DbType, State> }
      */
     replaceValue = (value) => {
-        return new Column(this.t, this.u, value)
+        return new Column(this.dbType, this.state, value)
     }
 
 }
@@ -60,7 +60,7 @@ export class NamedColumn extends Column {
      * @returns { Column<DbType, State> }
      */
     replaceValue = (value) => {
-        return new Column(this.t, this.u, value)
+        return new Column(this.dbType, this.state, value)
     }
 }
 
