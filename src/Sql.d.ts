@@ -10,7 +10,7 @@ export type Join = Readonly<{
 }>
 
 export type FromItem = Readonly<{
-    tableName: string,
+    from: string | SelectQuery,
     joins: readonly Join[],
 }>
 
@@ -30,6 +30,8 @@ export type SelectQuery = Readonly<{
     groupBy: readonly string[],
     fields: readonly Field[],
     order: readonly Order[]
+    limit: number | null,
+    offset: number | null,
 }>
 
 export type Eq = {

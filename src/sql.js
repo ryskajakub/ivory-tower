@@ -1,5 +1,6 @@
 import { toObj } from "./helpers"
 import { Column, path } from "./column"
+import { SubQuery } from "./orderBy"
 
 /**
  * @returns {import("./Sql").SelectQuery}
@@ -10,17 +11,19 @@ export function empty() {
         where: null,
         groupBy: [],
         fields: [],
-        order: []
+        order: [],
+        offset: null,
+        limit: null
     }
 }
 
 /**
- * @param {string} tableName 
+ * @param {string | import("./Sql").SelectQuery} tableName 
  * @returns {import("./Sql").FromItem}
  */
 export function fromItem(tableName) {
     return {
-        tableName,
+        from: tableName,
         joins: [],
     }
 }
@@ -43,7 +46,7 @@ export function eq(arg1, arg2) {
  * @param {{ [key: string]: { [key: string]: { type: string } } }} obj 
  * @returns {{ [key: string]: { [key: string]: import("./column").Column<any, any> } }}
  */
-export function replaceValueWithPath(obj) {
+export function replaceValueWithColumn(obj) {
     return toObj(Object.entries(obj).map(([key, value]) =>
         [key, toObj(Object.entries(value).map(([colKey, colValue]) => [colKey, 
             new Column(colValue.type, "selectable", path(`${key}.${colKey}`))

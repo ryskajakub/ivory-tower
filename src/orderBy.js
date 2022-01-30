@@ -38,7 +38,7 @@ export class OrderingElement extends FinalOrderingElement {
 
 
 /**
- * @template {string | null} Name
+ * @template {string} Name
  * @template { { [key: string]: import("./column").Column<any, any> } } T
  */
 export class SubQuery {
@@ -55,20 +55,37 @@ export class SubQuery {
         /** @readonly @protected */
         this.name = name
     }
+
+    getSql = () => {
+        return this.sql
+    }
+
+    getName = () => {
+        return this.name
+    }
+
+    getColumns = () => {
+        return {
+            [this.name]: this.columns
+        }
+    }
+
 }
 
 /**
  * @template { {[key: string]: import("./column").Column<any, any>} } T
- * @extends { SubQuery<null, T> }
  */
-export class Query extends SubQuery {
+export class Query {
 
     /**
      * @param {import("./Sql").SelectQuery} sql
      * @param {T} columns 
      */
     constructor(sql, columns) {
-        super(sql, columns, null)
+        /** @readonly @protected */
+        this.sql = sql
+        /** @readonly @protected */
+        this.columns = columns
     }
 
     /**
@@ -100,8 +117,11 @@ export class Offset extends Query {
      * @returns {Query<T>}
      */
     OFFSET = (ab) => {
-        // @ts-ignore
-        return {}
+        const newSql = {
+            ...this.sql,
+            offset: ab
+        }
+        return new Query(newSql, this.columns)
     }
 }
 
@@ -124,8 +144,11 @@ export class Limit extends Offset {
      * @returns {Offset<T>}
      */
     LIMIT = (ab) => {
-        // @ts-ignore
-        return {};
+        const newSql = {
+            ...this.sql,
+            limit: ab
+        }
+        return new Offset(newSql, this.columns)
     }
 }
 

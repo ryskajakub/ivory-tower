@@ -55,8 +55,6 @@ const petsDef = {
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
-// insertRow(persons, { name: "franta", address: "doma" })
-
 const q1 =
     SELECT((ab) => [ab.pets.id, simple_MAX(ab.pets.owner_id).AS("owner_id_max")],
         FROM(persons)
@@ -67,15 +65,15 @@ const q1 =
         .GROUP_BY(ab => [ab.pets.id])
         )
     .ORDER_BY(ab => [ab.id])
+    .LIMIT(5)
+    .OFFSET(5)
 
-console.log(JSON.stringify(q1, undefined, 2))
+// console.log(JSON.stringify(q1, undefined, 2))
 
-    // const t =
-    // SELECT(ab => [ab.persons.age],
-    //     FROM(persons)
-    //         .JOIN(pets).ON(ab => ab.persons.)
+const t = FROM(q1.AS("xxx"))
+    .JOIN(q1.AS("yyy")).ON(ab => eq(ab.xxx.id, ab.yyy.id))
 
-    // )
+console.log(JSON.stringify(t, undefined, 2))
 
 // const q01 = 
     // SELECT((ab) => [ab.volove.id, ab.volove.owner_id],

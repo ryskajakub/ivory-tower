@@ -1,8 +1,9 @@
 import { empty, fromItem } from "./sql";
 import { JoinPhaseAs } from "./joinPhase"
-import { replaceValueWithPath } from "./sql";
+import { replaceValueWithColumn } from "./sql";
 import { Where } from "./groupBy";
 import { Table } from "./table";
+import { SubQuery } from "./orderBy";
 
 /**
  * @template T
@@ -15,13 +16,11 @@ import { Table } from "./table";
  * @returns { From<{}, import("./From").FromTableOrQuery<TableOrQuery>, false> }
  */
 export function FROM(table) {
-    const [columns, name] = table instanceof Table ?
-        [replaceValueWithPath(table.def), table.name] : [null, ""]
-    /** @type { import("./Sql").SelectQuery } */
-    const sql = {
-        ...empty(),
-        froms: [fromItem(name)]
-    }
+    /** @type { [any, import("./Sql").SelectQuery] } */
+    const [columns, sql] = table instanceof Table ?
+        [replaceValueWithColumn(table.def), { ...empty(), froms: [fromItem(table.name)] }] :
+        table instanceof SubQuery ?
+            [table.getColumns(), { ...empty(), froms: [fromItem(table.getSql())] }] : [{}, empty()]
     // @ts-ignore
     return new From(sql, {}, columns)
 }
@@ -69,8 +68,10 @@ export class From extends Where {
      * @returns { import("./From").JoinTableOrQuery<T, U, TableOrQuery, false, Lateral> }
      */
     JOIN = (table) => {
-        // @ts-ignore
-        const currentJoin = replaceValueWithPath(table.def)
+        const currentJoin = table instanceof SubQuery ?
+            table.getColumns() :
+            // @ts-ignore
+            replaceValueWithColumn(table.def)
         // @ts-ignore
         return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, table.name, currentJoin, null, "inner")
     }
@@ -82,7 +83,7 @@ export class From extends Where {
      */
     LEFT_JOIN = (table) => {
         // @ts-ignore
-        const currentJoin = replaceValueWithPath(table.def)
+        const currentJoin = replaceValueWithColumn(table.def)
         // @ts-ignore
         return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, table.name, currentJoin, null, "left")
     }
