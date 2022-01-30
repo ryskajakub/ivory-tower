@@ -3,9 +3,10 @@ import { Table } from "./table"
 import { eq as eq, print } from "./sql"
 import { SELECT } from "./select"
 import { simple_MAX } from "./functions"
+import { runQuery } from "./run"
 
 /**
- * @typedef {{ persons: { id: "smallint" | undefined, name: "text" | null, age: "integer" | null | undefined, address: "text", }}} Person
+ * @typedef {{ people: { id: "smallint" | undefined, name: "text" | null, age: "integer" | null | undefined }}} Person
  */
 
 /**
@@ -19,7 +20,7 @@ import { simple_MAX } from "./functions"
 
 /** @type {TableType<Person>} */
 const personsDef = {
-    persons: {
+    people: {
         id: {
             type: "smallint",
             default: "auto",
@@ -32,9 +33,6 @@ const personsDef = {
             type: "integer",
             nullable: true,
             default: 3
-        },
-        address: {
-            type: "text"
         }
     }
 }
@@ -55,24 +53,28 @@ const petsDef = {
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
-const q0 = SELECT(ab => [ab.persons.name], FROM(persons)).AS("xyz")
+const q01 = SELECT(ab => [ab.people.name], FROM(persons))
+const q0 = q01.AS("xyz")
 // console.log(print(q0.getSql(), 0))
+
+const result = await runQuery(q01)
+console.log(result)
 
 const q1 =
     SELECT((ab) => [ab.pets.id, simple_MAX(ab.pets.owner_id).AS("owner_id_max")],
         FROM(persons)
-            .JOIN(pets).AS("p2").ON((ab) => eq(ab.persons.id, ab.p2.owner_id))
+            .JOIN(pets).AS("p2").ON((ab) => eq(ab.people.id, ab.p2.owner_id))
             .LEFT_JOIN(pets).AS("p").ON(ab => eq(ab.p.id, ab.p.id))
             .item(pets)
             .item(q0)
-            .WHERE(ab => eq(ab.persons.id, ab.pets.owner_id))
+            .WHERE(ab => eq(ab.people.id, ab.pets.owner_id))
             .GROUP_BY(ab => [ab.pets.id])
     )
     .ORDER_BY(ab => [ab.id])
     .LIMIT(5)
     .OFFSET(5)
 
-console.log(print(q1.getSql(), 0))
+// console.log(print(q1.getSql(), 0))
 
 // const q01 = 
     // SELECT((ab) => [ab.volove.id, ab.volove.owner_id],

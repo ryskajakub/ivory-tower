@@ -1,12 +1,13 @@
 # lateral joins
 # writes
 # select from subquery
-- implementation
+# implementation
 - transformers
 # json support
 # aggregation functions
 # functions
 # left joins
-- print select
+# print select
 # psql types
 - dependency on lateral queries
+- run query
