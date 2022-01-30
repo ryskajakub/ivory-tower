@@ -32,6 +32,7 @@ export type SelectQuery = Readonly<{
     order: readonly Order[]
     limit: number | null,
     offset: number | null,
+    as: string | null, 
 }>
 
 export type Eq = {

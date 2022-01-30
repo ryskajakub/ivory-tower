@@ -4,6 +4,8 @@ import { replaceValueWithColumn } from "./sql";
 import { Where } from "./groupBy";
 import { Table } from "./table";
 import { SubQuery } from "./orderBy";
+import { Column, NamedColumn } from "./column";
+import { mapOneLevel } from "./helpers"
 
 /**
  * @template T
@@ -21,9 +23,10 @@ export function FROM(table) {
         [replaceValueWithColumn(table.def), { ...empty(), froms: [fromItem(table.name)] }] :
         table instanceof SubQuery ?
             [table.getColumns(), { ...empty(), froms: [fromItem(table.getSql())] }] : [{}, empty()]
-    // @ts-ignore
     return new From(sql, {}, columns)
 }
+
+    // @ts-ignore
 
 /**
  * @template T
@@ -43,8 +46,23 @@ export class From extends Where {
      * @returns { import("./From").MakeSelectable<T & U> }
      */
     getSelectable = () => {
+
+        /** @type { (name: string, c: Column<any, any>) => NamedColumn<any, any, any> } */
+        const toNamedColumn = (name, c) => {
+            return c.AS(name)
+        }
+
+        const unionOfColumns = {
+            ...this.currentFrom,
+            ...this.previousFroms,
+        }
+
+        const union = mapOneLevel(unionOfColumns, (_key, obj) => 
+            mapOneLevel(obj, (name, c) => toNamedColumn(name, c))
+        )
+
         // @ts-ignore
-        return {}
+        return union
     }
 
     getSql = () => {
@@ -113,8 +131,8 @@ export class From extends Where {
      * @param {TableOrQuery} table 
      * @returns {From<import("./Helpers").DisjointUnion<U, T>, import("./From").FromTableOrQuery<TableOrQuery>,true>}
      */
-    LATERAL_item = (table) => {
+    LATERAL = (table) => {
         // @ts-ignore
-        return {}
+        return this.item(table)
     }
 }

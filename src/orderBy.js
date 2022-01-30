@@ -94,7 +94,16 @@ export class Query {
      * @returns { SubQuery<Name, T> }
      */
     AS = (name) => {
-        return new SubQuery(this.sql, this.columns, name)
+        /** @type { import("./Sql").SelectQuery } */
+        const newSql = {
+            ...this.sql,
+            as: name
+        }
+        return new SubQuery(newSql, this.columns, name)
+    }
+
+    getSql = () => {
+        return this.sql
     }
 }
 

@@ -1,6 +1,6 @@
 import { FROM } from "./from"
 import { Table } from "./table"
-import { eq as eq } from "./sql"
+import { eq as eq, print } from "./sql"
 import { SELECT } from "./select"
 import { simple_MAX } from "./functions"
 
@@ -55,25 +55,24 @@ const petsDef = {
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
+const q0 = SELECT(ab => [ab.persons.name], FROM(persons)).AS("xyz")
+// console.log(print(q0.getSql(), 0))
+
 const q1 =
     SELECT((ab) => [ab.pets.id, simple_MAX(ab.pets.owner_id).AS("owner_id_max")],
         FROM(persons)
             .JOIN(pets).AS("p2").ON((ab) => eq(ab.persons.id, ab.p2.owner_id))
             .LEFT_JOIN(pets).AS("p").ON(ab => eq(ab.p.id, ab.p.id))
-        .item(pets)
-        .WHERE(ab => eq(ab.persons.id, ab.pets.owner_id))
-        .GROUP_BY(ab => [ab.pets.id])
-        )
+            .item(pets)
+            .item(q0)
+            .WHERE(ab => eq(ab.persons.id, ab.pets.owner_id))
+            .GROUP_BY(ab => [ab.pets.id])
+    )
     .ORDER_BY(ab => [ab.id])
     .LIMIT(5)
     .OFFSET(5)
 
-// console.log(JSON.stringify(q1, undefined, 2))
-
-const t = FROM(q1.AS("xxx"))
-    .JOIN(q1.AS("yyy")).ON(ab => eq(ab.xxx.id, ab.yyy.id))
-
-console.log(JSON.stringify(t, undefined, 2))
+console.log(print(q1.getSql(), 0))
 
 // const q01 = 
     // SELECT((ab) => [ab.volove.id, ab.volove.owner_id],
@@ -81,19 +80,19 @@ console.log(JSON.stringify(t, undefined, 2))
 
 
 
-    /*
+/*
 const q2 =
-    SELECT((ab) => [ab.persons.id, MAX(ab.persons.age)],
-        FROM(persons)
-            .JOIN(pets).ON((ab) => eq(ab.persons.id, ab.pets.owner_id))
-            .JOIN(pets).AS("xxx").ON((ab) => eq(ab.xxx.owner_id, ab.persons.id))
-            .GROUP_BY((ab) => [ab.persons.id])
-    )
-    .ORDER_BY(ab => [ab.age, ab.id.ASC()])
-    .LIMIT(3)
-    .OFFSET(3)
-    .AS("subquery")
-    */
+SELECT((ab) => [ab.persons.id, MAX(ab.persons.age)],
+    FROM(persons)
+        .JOIN(pets).ON((ab) => eq(ab.persons.id, ab.pets.owner_id))
+        .JOIN(pets).AS("xxx").ON((ab) => eq(ab.xxx.owner_id, ab.persons.id))
+        .GROUP_BY((ab) => [ab.persons.id])
+)
+.ORDER_BY(ab => [ab.age, ab.id.ASC()])
+.LIMIT(3)
+.OFFSET(3)
+.AS("subquery")
+*/
 
 
 /*

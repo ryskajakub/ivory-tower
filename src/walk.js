@@ -32,7 +32,7 @@ export function walkExpression(expression, number) {
  * @returns {WalkedColumn}
  */
 function walkArg(column, number) {
-    switch (column.v.type) {
+    switch (column.value.type) {
         case "literal":
             /** @type {import("./Column").Path} */
             const path = {
@@ -42,7 +42,7 @@ function walkArg(column, number) {
             return {
                 column: column.replaceValue(path),
                 number: number + 1,
-                values: [column.v]
+                values: [column.value]
             }
         case "path":
             return {
