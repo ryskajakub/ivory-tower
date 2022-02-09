@@ -74,7 +74,7 @@ const q1 =
     .LIMIT(5)
     .OFFSET(5)
 
-// console.log(print(q1.getSql(), 0))
+console.log(print(q1.getSql(), 0))
 
 // const q01 = 
     // SELECT((ab) => [ab.volove.id, ab.volove.owner_id],

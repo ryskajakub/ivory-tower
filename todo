@@ -10,4 +10,4 @@
 # print select
 # psql types
 - dependency on lateral queries
-- run query
+# run query
