@@ -20,7 +20,7 @@ This query is represented by this javascript expression:
 SELECT(t => [t.people.name], FROM(persons))
 ```
 
-In the above query, if we would write the query by raw sql string, we could make a mistake of selecting different columns than those, that are defined in the persons table. Therefore, the t.people object contains only fields defined in the persons table. Would we try to access some column that is not defined in that table, we would get compile error.
+In the above query, if we would write the query by raw sql string, we could make a mistake of selecting different columns than those, that are defined in the persons table. Therefore, the `t.people` object contains only fields defined in the persons table. Would we try to access some column that is not defined in that table, we would get compile error.
 
 ### joins
 
@@ -42,6 +42,7 @@ VScode knows, that I can only select from columns defined in the respective tabl
 ## running example
 
 ```
+yarn
 docker-compose up
 yarn run example
 ```
