@@ -85,10 +85,10 @@ const result = await runQuery(q01)
 console.log(result)
 
 const q2 =
-    SELECT((ab) => [ab.pets.id, MAX(ab.pets.owner_id).AS("owner_id_max")],
+    SELECT((t) => [t.pets.id, MAX(t.pets.owner_id).AS("owner_id_max")],
         FROM(persons)
-            .LEFT_JOIN(pets).ON(ab => eq(ab.pets.owner_id, ab.people.id))
-            .GROUP_BY(ab => [ab.pets.id])
+            .LEFT_JOIN(pets).ON(t => eq(t.pets.owner_id, t.people.id))
+            .GROUP_BY(t => [t.pets.id])
     )
     .ORDER_BY(ab => [ab.id])
     .LIMIT(1)
