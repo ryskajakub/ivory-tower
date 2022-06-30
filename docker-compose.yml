@@ -1,0 +1,19 @@
+# Use postgres/example user/password credentials
+version: '3.1'
+
+volumes:
+  db_data: {}
+
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: db
+      POSTGRES_DB: db
+      POSTGRES_PASSWORD: db
+      PGDATA: /pgdata
+    volumes: 
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - db_data:/pgdata
+    ports:
+      - "5433:5432"

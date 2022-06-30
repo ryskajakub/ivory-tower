@@ -55,13 +55,6 @@ export function replaceValueWithColumn(obj) {
     ))
 }
 
-// /**
-//  * @param {string} string 
-//  * @param {number} indent 
-//  * @returns {string}
-//  */
-// function printRow(string, indent)
-
 /**
  * @param {import("./Sql").Condition } condition 
  */
@@ -96,7 +89,7 @@ export function print(sq, indent) {
                 case "inner": return "JOIN"
             }
         }
-        const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + ` ${join.tableName}` + (join.as === null ? "" : ` AS ${join.as}` ) + (` ON ${printCondition(join.on)}`))
+        const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + ` ${join.tableName}` + (join.as === null ? "" : ` AS ${join.as}` ) + (` ON ${printCondition(join.on)}`)).reduce((prev, current) => `${prev}${current}`, "")
         return `${f1}${joins}`
     }).reduce((prev, current) => `${prev},\n${current}`)
 

@@ -33,21 +33,6 @@ export type IsUniqueTuple<A extends any[]> =
 export type UniqueNames<NCs extends NamedColumn<any, any, any>[]> =
     IsUniqueTuple<NamedColumnToString<NCs>> extends true ? true : false
 
-/*
-type All<ExpectedState, NCs extends NamedColumn<any, any, any>[]> =
-NCs["length"] extends 0 ? true : (NCs extends [infer X, ...infer Xs] ?
-    (X extends NamedColumn<any, infer State, any> ? (
-        State extends ExpectedState ?
-        (Xs extends NamedColumn<any, any, any>[] ?
-            All<ExpectedState, Xs> : never) : false)
-        : never)
-    : never)
-
-export type AllSelectableOrAggregable<NCs extends NamedColumn<any, any, any>[]> =
-NCs["length"] extends 1 ? true : NCs extends [infer X, ...infer Xs] ? X extends
-NamedColumn<any, infer ExpectedState, any> ? ( Xs extends NamedColumn<any, any, any>[], All<ExpectedState, Xs>) : never : never
-*/
-
 export type AllSelectableOrAggregable<NCs extends NamedColumn<any, any, any>[]> =
     NCs extends [NamedColumn<any, Aggregated, any>, ...NamedColumn<any, Aggregated, any>[]] ? true :
     NCs extends [NamedColumn<any, Selectable, any>, ...NamedColumn<any, Selectable, any>[]] ? true :
@@ -89,29 +74,3 @@ export type Select<T extends NamedColumn<any, any, any>[]> =
     AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? ExpandType<MakeObj<T, {}>> : never) : never
 
 type NamedColumns = [NamedColumn<any, any, "lol.lll">, NamedColumn<any, any, "p.xxx">]
-
-type NCCC = NamedColumnToString<NamedColumns>
-
-type GGG = GroupByResult<{ a1: { c1: NamedColumn<any, any, "p.xxx">, c2: NamedColumn<any, any, "p.yyy"> } }, NamedColumns>
-
-type XXX = AllSelectableOrAggregable<[NamedColumn<any, "selectable", "lol">, NamedColumn<any, "aggregated", "lol">]>
-
-type T = "agg" | "lol"
-
-type X = T extends "agg" ? true : false
-
-type LLL = MakeObj<[NamedColumn<"text", "selectable", "lol">, NamedColumn<"text", "selectable", "lol2">], {}>
-
-type TTT = {
-    a: 3
-} & { 
-    b: 8
- }
-
-type Map<T> = {
-    [K in keyof T]: T[K]
-}
-
-type X1<T> = Map<T>
-
-type L = X1<TTT>

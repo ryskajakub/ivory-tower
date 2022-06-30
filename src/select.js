@@ -12,9 +12,6 @@ export function SELECT(mkGroupedColumns, selectable) {
 
     const sql = selectable.getSql()
 
-    // console.log(selectable.getSelectable())
-    // process.exit(1)
-
     /** @type { NamedColumn<any, any, any>[] } */
     const groupedColumns = mkGroupedColumns(selectable.getSelectable())
     const columns = groupedColumns.reduce((previous, current) => {

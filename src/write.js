@@ -6,5 +6,5 @@ import { Table } from "./table"
  * @param {import("./Table").InsertType<T>} data 
  */
 export function insertRow(t, data) { 
-
+    // todo 
 }

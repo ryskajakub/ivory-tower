@@ -4,6 +4,7 @@ import { From } from "./from"
 import { JoinPhase, JoinPhaseAs } from "./joinPhase";
 import { FinalOrderingElement, SubQuery } from "./orderBy";
 import { Table } from "./table";
+import { DisjointUnion } from "./Helpers";
 
 export type FromTableOrQuery<T> =
     T extends Table<infer TableType> ? FromTable<TableType> : (

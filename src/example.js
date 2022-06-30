@@ -2,8 +2,8 @@ import { FROM } from "./from"
 import { Table } from "./table"
 import { eq as eq, print } from "./sql"
 import { SELECT } from "./select"
-import { simple_MAX } from "./functions"
-import { runQuery } from "./run"
+import { MAX, MIN } from "./functions"
+import { runQuery, runRaw } from "./run"
 
 /**
  * @typedef {{ people: { id: "smallint" | undefined, name: "text" | null, age: "integer" | null | undefined }}} Person
@@ -50,63 +50,50 @@ const petsDef = {
     }
 }
 
+const initDb = async () => {
+    await runRaw(`
+    drop table if exists people;
+    create table people(
+        id integer,
+        name varchar(255),
+        age integer
+    );
+    insert into people (id, name, age) values(1, 'John', 20);
+    insert into people (id, name, age) values(2, 'Mary', 25);
+    insert into people (id, name, age) values(3, 'Bob', 30);
+
+    drop table if exists pets;
+    create table pets(
+        id integer,
+        owner_id integer
+    );
+    insert into pets (id, owner_id) values(1, 1);
+    insert into pets (id, owner_id) values(2, 2);
+    insert into pets (id, owner_id) values(3, 1);
+
+    `)    
+}
+
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
 const q01 = SELECT(ab => [ab.people.name], FROM(persons))
 const q0 = q01.AS("xyz")
-// console.log(print(q0.getSql(), 0))
 
+await initDb()
 const result = await runQuery(q01)
 console.log(result)
 
-const q1 =
-    SELECT((ab) => [ab.pets.id, simple_MAX(ab.pets.owner_id).AS("owner_id_max")],
+const q2 =
+    SELECT((ab) => [ab.pets.id, MAX(ab.pets.owner_id).AS("owner_id_max")],
         FROM(persons)
-            .JOIN(pets).AS("p2").ON((ab) => eq(ab.people.id, ab.p2.owner_id))
-            .LEFT_JOIN(pets).AS("p").ON(ab => eq(ab.p.id, ab.p.id))
-            .item(pets)
-            .item(q0)
-            .WHERE(ab => eq(ab.people.id, ab.pets.owner_id))
+            .LEFT_JOIN(pets).ON(ab => eq(ab.pets.owner_id, ab.people.id))
             .GROUP_BY(ab => [ab.pets.id])
     )
     .ORDER_BY(ab => [ab.id])
-    .LIMIT(5)
-    .OFFSET(5)
+    .LIMIT(1)
+    .OFFSET(1)
 
-console.log(print(q1.getSql(), 0))
-
-// const q01 = 
-    // SELECT((ab) => [ab.volove.id, ab.volove.owner_id],
-    // )
-
-
-
-/*
-const q2 =
-SELECT((ab) => [ab.persons.id, MAX(ab.persons.age)],
-    FROM(persons)
-        .JOIN(pets).ON((ab) => eq(ab.persons.id, ab.pets.owner_id))
-        .JOIN(pets).AS("xxx").ON((ab) => eq(ab.xxx.owner_id, ab.persons.id))
-        .GROUP_BY((ab) => [ab.persons.id])
-)
-.ORDER_BY(ab => [ab.age, ab.id.ASC()])
-.LIMIT(3)
-.OFFSET(3)
-.AS("subquery")
-*/
-
-
-/*
-const q =
-    SELECT((a) => { return [ a.pets.id, a.pets.owner_id ] } ,
-        FROM(persons)
-            .JOIN(pets, (ab) => eq(ab.persons.id, ab.pets.owner_id))
-            .item(persons).JOIN(pets, (ab) => eq(ab.persons_id, ab.pets.owner_id))
-            .WHERE((a) => eq(a.persons.id, literal(2)))
-            .GROUP_BY((a) => [a.persons.id])
-            .HAVING()
-    )
-*/
-
-// console.log(JSON.stringify(q, undefined, 2))
+const result2 = await runQuery(q2)
+console.log(print(q2.getSql(), 0))
+console.log(result2)

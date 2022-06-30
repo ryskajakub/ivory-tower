@@ -11,3 +11,4 @@
 # psql types
 - dependency on lateral queries
 # run query
+- functions
