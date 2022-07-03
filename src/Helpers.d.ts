@@ -1,6 +1,5 @@
 import { Aggregable, Aggregated, Selectable } from "./Column"
 import { NamedColumn, Column } from "./column"
-import { OrderingElement } from "./orderBy"
 
 type Disjoint<A, B> = Extract<A, B> extends never ? true : false
 
@@ -16,7 +15,7 @@ export type DisjointUnion<Obj1, Obj2> = Obj1 extends Record<string, any> ? (
 
 export type AnyIntersection<A, B> = Extract<A, B> extends never ? false : true
 
-export type IfAnyIntersection<A, B, IfTrue> = AnyIntersection<A, B> extends never ? never : IfTrue
+export type IfAnyIntersection<A, B, IfTrue, IfFalse> = AnyIntersection<A, B> extends true ? IfTrue : IfFalse
 
 type BNotContainsA<A, B extends any[]> = B["length"] extends 0 ?
     true :

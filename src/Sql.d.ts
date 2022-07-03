@@ -41,7 +41,13 @@ export type Eq = {
     arg2: Column<any, SingleState>,
 }
 
-export type Condition = Eq
+export type Gt = {
+    type: "gt"
+    arg1: Column<any, SingleState>,
+    arg2: Column<any, SingleState>,
+}
+
+export type Condition = Eq | Gt
 
 export type Ordering = {
     field: Column<any, any>,

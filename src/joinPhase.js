@@ -1,4 +1,5 @@
 import { From } from "./from"
+import { renameColumn, replaceValueWithColumn } from "./sql"
 
 /**
  * @template T
@@ -34,7 +35,7 @@ export class JoinPhase {
     }
 
     /**
-     * @param {(ab: import("./From").On<T, U, V, Lateral>) => import("./Sql").Condition} mkCondition 
+     * @param { (ab: import("./From").On<T, U, V, Lateral>) => import("./Sql").Condition} mkCondition 
      */
     ON = (mkCondition) => {
 
@@ -45,8 +46,10 @@ export class JoinPhase {
             ...this.currentJoin,
         }
 
-        // @ts-ignore
-        const onResult = mkCondition(union)
+        /** @type { any } */
+        const unionAny = union
+
+        const onResult = mkCondition(unionAny)
 
         /** @type {import("./Sql").Join} */
         const newJoin = {
@@ -98,9 +101,12 @@ export class JoinPhaseAs extends JoinPhase {
     AS = (name) => {
         const key0 = Object.keys(this.currentJoin)[0]
 
+        // @ts-ignore
+        const currentJoin = this.currentJoin[key0]
+        const currentJoinAs = renameColumn(currentJoin, name)
+
         const newCurrentJoin = {
-            // @ts-ignore
-            [name]: this.currentJoin[key0]
+            [name]: currentJoinAs
         }
 
         // @ts-ignore

@@ -1,6 +1,6 @@
 import { FROM } from "./from"
 import { Table } from "./table"
-import { eq as eq, print } from "./sql"
+import { eq as eq, gt, print } from "./sql"
 import { SELECT } from "./select"
 import { MAX, MIN } from "./functions"
 import { runQuery, runRaw } from "./run"
@@ -77,23 +77,27 @@ const initDb = async () => {
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
+/*
 const q01 = SELECT(ab => [ab.people.name], FROM(persons))
 const q0 = q01.AS("xyz")
 
 await initDb()
 const result = await runQuery(q01)
+
 console.log(result)
+*/
 
 const q2 =
-    SELECT((t) => [t.pets.id, MAX(t.pets.owner_id).AS("owner_id_max")],
+    SELECT((t) => [t.xxx.id, MAX(t.xxx.owner_id).AS("owner_id_max")],
         FROM(persons)
-            .LEFT_JOIN(pets).ON(t => eq(t.pets.owner_id, t.people.id))
-            .GROUP_BY(t => [t.pets.id])
+            .LEFT_JOIN(pets).AS("xxx").ON(t => eq(t.xxx.owner_id, t.people.id))
+            .JOIN(pets).ON(t => gt(t.pets.id, 5))
+            .GROUP_BY(t => [t.xxx.id])
     )
     .ORDER_BY(ab => [ab.id])
     .LIMIT(1)
     .OFFSET(1)
 
-const result2 = await runQuery(q2)
+// const result2 = await runQuery(q2)
 console.log(print(q2.getSql(), 0))
-console.log(result2)
+// console.log(result2)

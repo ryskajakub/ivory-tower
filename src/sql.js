@@ -44,14 +44,46 @@ export function eq(arg1, arg2) {
 }
 
 /**
+ * @template Arg1
+ * @template Arg2
+ * @param {Arg1} arg1 
+ * @param {Arg2} arg2 
+ * @returns {import("./Operators").BoolOp<Arg1, Arg2, import("./Sql").Gt>}
+ */
+export function gt(arg1, arg2) {
+    // @ts-ignore
+    return {
+        type: "gt",
+        arg1, 
+        arg2,
+    }
+}
+
+/**
+ * @returns { unknown }
+ */
+export function gt2() {
+    throw new Error()
+}
+
+/**
+ * @param { { [key: string]: { type: string } } } obj 
+ * @param {string} key
+ * @returns { { [key: string]: import("./column").Column<any, any> } }
+ */
+export function renameColumn(obj, key) {
+    return toObj(Object.entries(obj).map(([colKey, colValue]) => [colKey,
+        new Column(colValue.type, "selectable", path(`${key}.${colKey}`))
+    ]))
+}
+
+/**
  * @param {{ [key: string]: { [key: string]: { type: string } } }} obj 
  * @returns {{ [key: string]: { [key: string]: import("./column").Column<any, any> } }}
  */
 export function replaceValueWithColumn(obj) {
     return toObj(Object.entries(obj).map(([key, value]) =>
-        [key, toObj(Object.entries(value).map(([colKey, colValue]) => [colKey,
-            new Column(colValue.type, "selectable", path(`${key}.${colKey}`))
-        ]))]
+        [key, renameColumn(value, key)]
     ))
 }
 

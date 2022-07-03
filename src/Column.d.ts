@@ -28,7 +28,11 @@ export type ColumnState = Aggregable | SingleState
 
 export type Parametrized = true | false
 
-export type Numeric = "smallint" | "integer"
+export type Integer = "smallint" | "integer" | "bigint"
+
+export type Float = "real" | "double"
+
+export type Numeric = Integer | Float
 
 export type Text = "text"
 
@@ -42,9 +46,9 @@ export type Temporal = Date | Time | Timestamp
 
 export type Textual = Text
 
-type TsType<Db> = Db extends "smallint" ? number :
-    Db extends "integer" ? number :
-    Db extends "text" ? string :
+type TsType<Db> = Db extends Integer ? number :
+    Db extends Temporal ? Date :
+    Db extends Textual ? string :
     never
 
 type DbType<Ts> = Ts extends number ? "smallint" | "integer" :
