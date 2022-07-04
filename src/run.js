@@ -3,6 +3,7 @@ import { print } from "./sql";
 
 // @ts-ignore
 import pkg from "pg";
+import { walkSelectQuery } from "./walk";
 const { Client } = pkg;
 
 /**
@@ -20,8 +21,10 @@ export async function runQuery(query) {
   });
   await client.connect();
   const sql = query.getSql();
-  const sqlString = print(sql, 0);
-  const res = await client.query(sqlString);
+  const walk = walkSelectQuery(sql)
+  const sqlString = print(walk.sql);
+  const params = walk.params
+  const res = await client.query(sqlString, params);
   await client.end();
   return res.rows;
 }

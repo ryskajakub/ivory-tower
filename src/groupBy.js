@@ -81,7 +81,7 @@ export class Where extends GroupBy {
     }
 
     /**
-     * @param {(ab: import("./Helpers").DisjointUnion<T, U>) => import("./Sql").Condition} mkCondition 
+     * @param {(ab: import("./Helpers").DisjointUnion<T, U>) => import("./Sql").SqlExpression} mkCondition 
      */
     WHERE = (mkCondition) => {
         const union = {

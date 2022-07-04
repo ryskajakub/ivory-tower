@@ -1,5 +1,6 @@
 import { From } from "./from"
-import { renameColumn, replaceValueWithColumn } from "./sql"
+import { renameColumn } from "./sql"
+import { Expression } from "./expression"
 
 /**
  * @template T
@@ -35,7 +36,7 @@ export class JoinPhase {
     }
 
     /**
-     * @param { (ab: import("./From").On<T, U, V, Lateral>) => import("./Sql").Condition} mkCondition 
+     * @param { (ab: import("./From").On<T, U, V, Lateral>) => Expression<"boolean">} mkCondition 
      */
     ON = (mkCondition) => {
 
@@ -54,7 +55,7 @@ export class JoinPhase {
         /** @type {import("./Sql").Join} */
         const newJoin = {
             tableName: this.tableName,
-            on: onResult,
+            on: onResult.sql,
             as: this.as,
             type: this.joinType,
         }

@@ -42,7 +42,9 @@ export type Time = "time"
 
 export type Timestamp = "timestamp"
 
-export type Temporal = Date | Time | Timestamp
+export type Boolean = "boolean"
+
+export type Temporal = Date | Time | Timestamp | Boolean
 
 export type Textual = Text
 

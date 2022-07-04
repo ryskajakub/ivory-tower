@@ -1,9 +1,10 @@
 import { FROM } from "./from"
 import { Table } from "./table"
-import { eq as eq, gt, print } from "./sql"
+import { print } from "./sql"
 import { SELECT } from "./select"
 import { MAX, MIN } from "./functions"
 import { runQuery, runRaw } from "./run"
+import { eq, gt } from "./expression"
 
 /**
  * @typedef {{ people: { id: "smallint" | undefined, name: "text" | null, age: "integer" | null | undefined }}} Person
@@ -99,5 +100,5 @@ const q2 =
     .OFFSET(1)
 
 // const result2 = await runQuery(q2)
-console.log(print(q2.getSql(), 0))
+console.log(print(q2.getSql()))
 // console.log(result2)

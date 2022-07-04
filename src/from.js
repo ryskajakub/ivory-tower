@@ -78,8 +78,6 @@ export class From extends Where {
         super(sql, previousFroms, currentFrom)
     }
 
-    //  * @returns {JoinPhaseAs<T, U, import("./From").FromTableOrQuery<TableOrQuery>>}
-
     /**
      * @template TableOrQuery
      * @param { TableOrQuery } table 

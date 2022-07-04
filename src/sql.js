@@ -1,6 +1,5 @@
 import { toObj } from "./helpers"
 import { Column, path } from "./column"
-import { SubQuery } from "./orderBy"
 
 /**
  * @returns {import("./Sql").SelectQuery}
@@ -30,43 +29,6 @@ export function fromItem(tableName) {
 }
 
 /**
- * @template A
- * @param {import("./column").Column<A, import("./Column").SingleState>} arg1 
- * @param {import("./column").Column<A, import("./Column").SingleState>} arg2 
- * @returns {import("./Sql").Eq}
- */
-export function eq(arg1, arg2) {
-    return {
-        type: "eq",
-        arg1,
-        arg2,
-    }
-}
-
-/**
- * @template Arg1
- * @template Arg2
- * @param {Arg1} arg1 
- * @param {Arg2} arg2 
- * @returns {import("./Operators").BoolOp<Arg1, Arg2, import("./Sql").Gt>}
- */
-export function gt(arg1, arg2) {
-    // @ts-ignore
-    return {
-        type: "gt",
-        arg1, 
-        arg2,
-    }
-}
-
-/**
- * @returns { unknown }
- */
-export function gt2() {
-    throw new Error()
-}
-
-/**
  * @param { { [key: string]: { type: string } } } obj 
  * @param {string} key
  * @returns { { [key: string]: import("./column").Column<any, any> } }
@@ -88,25 +50,42 @@ export function replaceValueWithColumn(obj) {
 }
 
 /**
- * @param {import("./Sql").Condition } condition 
+ * @param {import("./Sql").SqlExpression } condition 
  */
 function printCondition(condition) {
-    /** @type { (arg: import("./Column").ColumnValue ) => string } */
+
+    /** @type { (op: import("./Sql").Operator) => string } */
+    const printOperator = (op) => {
+        switch (op) {
+            case "and": return "AND"
+            case "or": return "OK"
+            case "gt": return ">"
+            case "gte": return ">="
+            case "eq": return "="
+            case "lt": return "<"
+            case "lte": return "<="
+        }
+    }
+
+    /** @type { (arg: import("./Sql").SqlExpression ) => string } */
     const value = (arg) => {
         switch (arg.type) {
             case "literal": return `${arg.value}`
             case "path": return arg.value
+            case "binary": return `(${value(arg.arg1)} ${printOperator(arg.operator)} ${value(arg.arg2)})`
+            case "negation": return `NOT ${value(arg)}`
         }
     }
-    return `${value(condition.arg1.value)} = ${value(condition.arg2.value)}`
+    return value(condition)
 }
 
 /**
  * @param { import("./Sql").SelectQuery } sq 
- * @param {number} indent
+ * @param {number} [indentParam]
  * @returns {string}
  */
-export function print(sq, indent) {
+export function print(sq, indentParam) {
+    const indent = indentParam ? indentParam : 0
     const indentStr = [...Array(indent).keys()].map(_ => "\t").reduce((prev, current) => `${prev}${current}`, "")
     const fields = sq.fields.map(field => field.expression + (field.as === null ? "" : ` AS ${field.as}`))
         .reduce((prev, current) => `${prev}, ${current}`)

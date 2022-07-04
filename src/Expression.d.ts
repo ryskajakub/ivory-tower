@@ -1,4 +1,4 @@
-import { Aggregated, TsType } from "./Column";
+import { TsType } from "./Column";
 import { Column } from "./column";
 import { IfAnyIntersection } from "./Helpers";
 

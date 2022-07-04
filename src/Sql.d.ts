@@ -4,7 +4,7 @@ import { JoinType } from "./From"
 
 export type Join = Readonly<{
     tableName: string,
-    on: Condition,
+    on: SqlExpression,
     as: string | null,
     type: JoinType,
 }>
@@ -26,7 +26,7 @@ export type Order = {
 
 export type SelectQuery = Readonly<{
     froms: readonly FromItem[],
-    where: Condition | null,
+    where: SqlExpression | null,
     groupBy: readonly string[],
     fields: readonly Field[],
     order: readonly Order[]
@@ -35,19 +35,31 @@ export type SelectQuery = Readonly<{
     as: string | null, 
 }>
 
-export type Eq = {
-    type: "eq"
-    arg1: Column<any, SingleState>,
-    arg2: Column<any, SingleState>,
+export type Operator = "eq" | "gt" | "lt" | "gte" | "lte" | "and" | "or"
+
+export type Path = {
+    type: "path",
+    value: string,
 }
 
-export type Gt = {
-    type: "gt"
-    arg1: Column<any, SingleState>,
-    arg2: Column<any, SingleState>,
+export type Literal = {
+    type: "literal",
+    value: any
 }
 
-export type Condition = Eq | Gt
+export type Negation = {
+    type: "negation",
+    arg: SqlExpression,
+}
+
+export type SqlExpression = Path | Literal | BinaryOperation | Negation
+
+export type BinaryOperation = {
+    type: "binary",
+    operator: Operator,
+    arg1: SqlExpression,
+    arg2: SqlExpression,
+}
 
 export type Ordering = {
     field: Column<any, any>,
