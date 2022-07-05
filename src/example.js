@@ -2,7 +2,7 @@ import { FROM } from "./from"
 import { Table } from "./table"
 import { print } from "./sql"
 import { SELECT } from "./select"
-import { MAX, MIN } from "./functions"
+import { MAX, MIN } from "./aggregate"
 import { runQuery, runRaw } from "./run"
 import { eq, gt } from "./expression"
 
@@ -89,9 +89,9 @@ console.log(result)
 */
 
 const q2 =
-    SELECT((t) => [t.xxx.id, MAX(t.xxx.owner_id).AS("owner_id_max")],
+    SELECT((t) => [t.xxx.id, MAX(t.xxx.owner_id).AS("abc")],
         FROM(persons)
-            .LEFT_JOIN(pets).AS("xxx").ON(t => eq(t.xxx.owner_id, t.people.id))
+            .LEFT_JOIN(pets).AS("xxx").ON(t => eq(t.xxx.owner_id, t.people.id).AND(eq(t.xxx.id, 5)))
             .JOIN(pets).ON(t => gt(t.pets.id, 5))
             .GROUP_BY(t => [t.xxx.id])
     )

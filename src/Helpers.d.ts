@@ -3,6 +3,20 @@ import { NamedColumn, Column } from "./column"
 
 type Disjoint<A, B> = Extract<A, B> extends never ? true : false
 
+export type TypeEquals<A, B> = A extends B ? (
+    B extends A ? true : false
+) : false
+
+export type TypeMap<Map extends [any, any][], T> = 
+    Map extends [infer First, ...infer Rest] ? (
+        First extends [infer A, infer B] ? (
+            TypeEquals<A, T> extends true ? B : 
+                (Rest extends [any, any][] ? TypeMap<Rest, T> : never)
+        ) : (
+            never
+        )
+    ) : never
+
 export type ExpandType<T> = {} & {
     [K in keyof T]: T[K]
 }
@@ -71,5 +85,3 @@ export type MakeObj<T extends any[], Acc> =
 
 export type Select<T extends NamedColumn<any, any, any>[]> = 
     AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? ExpandType<MakeObj<T, {}>> : never) : never
-
-type NamedColumns = [NamedColumn<any, any, "lol.lll">, NamedColumn<any, any, "p.xxx">]

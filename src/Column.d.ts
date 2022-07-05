@@ -30,7 +30,7 @@ export type Parametrized = true | false
 
 export type Integer = "smallint" | "integer" | "bigint"
 
-export type Float = "real" | "double"
+export type Float = "real" | "double" | "numeric"
 
 export type Numeric = Integer | Float
 
@@ -44,9 +44,15 @@ export type Timestamp = "timestamp"
 
 export type Boolean = "boolean"
 
-export type Temporal = Date | Time | Timestamp | Boolean
+export type Temporal = Date | Time | Timestamp
 
 export type Textual = Text
+
+export type Interval = "interval"
+
+export type Money = "money"
+
+export type All = Boolean | Numeric | Textual | Temporal | Interval | Money
 
 type TsType<Db> = Db extends Integer ? number :
     Db extends Temporal ? Date :
