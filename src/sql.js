@@ -52,7 +52,7 @@ export function replaceValueWithColumn(obj) {
 /**
  * @param {import("./Sql").SqlExpression } condition 
  */
-function printCondition(condition) {
+export function printCondition(condition) {
 
     /** @type { (op: import("./Sql").Operator) => string } */
     const printOperator = (op) => {

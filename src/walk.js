@@ -32,7 +32,7 @@ import { Column } from "./column";
  * @param { WalkResult<SqlExpression> } walk
  * @returns { WalkResult<SqlExpression> }
  */
-function walkSqlExpression(walk) {
+function walkSqlExpressionInternal(walk) {
     switch(walk.sql.type ) {
         case "literal": 
             return {
@@ -46,7 +46,7 @@ function walkSqlExpression(walk) {
         case "path": return walk
         case "negation": 
             const arg = walk.sql.arg
-            const argWalked = walkSqlExpression({ ...walk, sql: arg })
+            const argWalked = walkSqlExpressionInternal({ ...walk, sql: arg })
             return {
                 ...argWalked,
                 sql: {
@@ -57,8 +57,8 @@ function walkSqlExpression(walk) {
         case "binary":
             const arg1 = walk.sql.arg1
             const arg2 = walk.sql.arg2
-            const arg1Walked = walkSqlExpression({...walk, sql: arg1})
-            const arg2Walked = walkSqlExpression({...arg1Walked, sql: arg2})
+            const arg1Walked = walkSqlExpressionInternal({...walk, sql: arg1})
+            const arg2Walked = walkSqlExpressionInternal({...arg1Walked, sql: arg2})
             return {
                 ...arg2Walked,
                 sql: {
@@ -72,7 +72,7 @@ function walkSqlExpression(walk) {
 
             /** @type { (acc: WalkResult<SqlExpression[]>, curr: SqlExpression ) => WalkResult<SqlExpression[]> } */
             const walkFunctionF = (acc, curr) => {
-                const walkedSqlExpression = walkSqlExpression({...acc, sql: curr})
+                const walkedSqlExpression = walkSqlExpressionInternal({...acc, sql: curr})
                 return {
                     ...walkedSqlExpression,
                     sql: [...acc.sql, walkedSqlExpression.sql]
@@ -94,10 +94,45 @@ function walkSqlExpression(walk) {
 }
 
 /**
+ * @param { SqlExpression } sqlExpression
+ * @returns { WalkResult<SqlExpression> } 
+ */ 
+export function walkSqlExpression(sqlExpression) {
+
+    /** @type {WalkResult<SqlExpression>} */
+    const walk = {
+        sql: sqlExpression,
+        param: 1,
+        params: [],
+    }
+
+    return walkSqlExpressionInternal(walk)
+}
+
+/**
  * @param { WalkResult<SelectQuery> } walk
  * @returns { WalkResult<SelectQuery> }
  */
 export function walkSelectQueryInternal(walk) {
+
+    /** @type { (acc: WalkResult<import("./Sql").Field[]>, curr: import("./Sql").Field) => WalkResult<import("./Sql").Field[]> } */
+    const walkFieldsF = (acc, curr) => {
+
+        const expr = {
+            ...acc,
+            sql: curr.expression
+        }
+
+        const walkedExpression = walkSqlExpressionInternal(expr)
+
+        return {
+            ...walkedExpression,
+            sql: [...acc.sql, { ...curr, expression: walkedExpression.sql}]
+        }
+
+    }
+
+    const walkFields = walk.sql.fields.reduce(walkFieldsF, {...walk, sql: []})
 
     /** @type { (acc: WalkResult<FromItem[]>, curr: FromItem) => WalkResult<FromItem[]> } */
     const walkFromsF = (acc, curr) => {
@@ -120,7 +155,7 @@ export function walkSelectQueryInternal(walk) {
 
         /** @type {(acc: WalkResult<Join[]>, curr: Join) => WalkResult<Join[]>} */
         const walkJoinsF = (accJoins, currJoin) => {
-            const result = walkSqlExpression({
+            const result = walkSqlExpressionInternal({
                 ...accJoins,
                 sql: currJoin.on,
             })
@@ -149,11 +184,11 @@ export function walkSelectQueryInternal(walk) {
     }
 
     const walkFroms = walk.sql.froms.reduce(walkFromsF, {
-        ...walk,
+        ...walkFields,
         sql: [],
     })
 
-    const walkWhere = walk.sql.where === null ? {...walkFroms, sql: null} : walkSqlExpression({ ...walkFroms, sql: walk.sql.where})
+    const walkWhere = walk.sql.where === null ? {...walkFroms, sql: null} : walkSqlExpressionInternal({ ...walkFroms, sql: walk.sql.where})
 
     return {
         ...walkWhere,

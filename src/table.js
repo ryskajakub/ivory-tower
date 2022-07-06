@@ -2,8 +2,9 @@
  * @template T
  */
 export class Table {
+
     /**
-     * @param {import("./Table").TableType<T>} def
+     * @param { import("./Table").TableType<T> } def
      */
     constructor(def) {
         const name = Object.keys(def)[0]
@@ -12,5 +13,6 @@ export class Table {
         /** @readonly */
         this.name = name
     }
+
 
 }

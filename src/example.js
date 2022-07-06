@@ -5,9 +5,10 @@ import { SELECT } from "./select"
 import { MAX, MIN } from "./aggregate"
 import { runQuery, runRaw } from "./run"
 import { eq, gt } from "./expression"
+import { insert } from "./insert"
 
 /**
- * @typedef {{ people: { id: "smallint" | undefined, name: "text" | null, age: "integer" | null | undefined }}} Person
+ * @typedef {{ people: { id: "smallint" | undefined, name: "text", age: "integer" | null | undefined }}} Person
  */
 
 /**
@@ -28,7 +29,6 @@ const personsDef = {
         },
         name: {
             type: "text",
-            nullable: true,
         },
         age: {
             type: "integer",
@@ -51,19 +51,17 @@ const petsDef = {
     }
 }
 
+const persons = new Table(personsDef)
+const pets = new Table(petsDef)
+
 const initDb = async () => {
     await runRaw(`
     drop table if exists people;
     create table people(
-        id integer,
-        name varchar(255),
-        age integer,
-        inserted timestamp with time zone
+        id serial,
+        name varchar(255) not null,
+        age integer
     );
-    insert into people (id, name, age, inserted) values(1, 'John', 20, NOW());
-    insert into people (id, name, age, inserted) values(2, 'Mary', 25, NOW());
-    insert into people (id, name, age, inserted) values(3, 'Bob', 30, NOW());
-    insert into people (id, name, age, inserted) values(4, 'Alice', 30, NOW());
 
     drop table if exists pets;
     create table pets(
@@ -75,10 +73,13 @@ const initDb = async () => {
     insert into pets (id, owner_id) values(3, 1);
 
     `)    
+
+    await insert(persons, {name: "lojza"})
+    await insert(persons, {name: "pepa"})
+    await insert(persons, {name: "karel"})
+
 }
 
-const persons = new Table(personsDef)
-const pets = new Table(petsDef)
 
 await initDb()
 /*
@@ -107,7 +108,4 @@ console.log(print(q2.getSql()))
 
 // const result = await runRaw(`select 1, 2, age, json_object_agg(id, inserted) from people group by age`)
 const result = await runRaw(`select * from people`)
-console.log(result.rows.map(
-    // @ts-ignore
-    (x) => x["inserted"].constructor.name
-))
+console.log(result.rows)
