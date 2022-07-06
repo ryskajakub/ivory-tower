@@ -1,4 +1,5 @@
-import { NamedColumn, Column, literal } from "./column";
+import { NamedColumn, Column } from "./column";
+import { path } from "./sql";
 
 /**
  * @template { Column<any, import("./Column").Aggregable> } T
@@ -6,8 +7,13 @@ import { NamedColumn, Column, literal } from "./column";
  * @returns { import("./column").Column<import("./Aggregate").Max<T>, import("./Column").Aggregated> }
  */
 export function MAX(column) {
-  const value = literal(`MAX(${column.value.value})`);
-  return new Column(column.dbType, "aggregated", value);
+  /** @type {import("./Sql").SqlFunction} */
+  const fun = {
+    type: "function",
+    name: "MAX",
+    args: [column.value]
+  }
+  return new Column(column.dbType, "aggregated", fun);
 }
 
 /**
@@ -16,8 +22,13 @@ export function MAX(column) {
  * @returns { import("./column").Column<import("./Aggregate").Min<T>, import("./Column").Aggregated> }
  */
 export function MIN(column) {
-  const value = literal(`MIN(${column.value.value})`);
-  return new Column(column.dbType, "aggregated", value);
+  /** @type {import("./Sql").SqlFunction} */
+  const fun = {
+    type: "function",
+    name: "MIN",
+    args: [column.value]
+  }
+  return new Column(column.dbType, "aggregated", fun);
 }
 
 /**
@@ -26,8 +37,13 @@ export function MIN(column) {
  * @returns { import("./column").Column<import("./Aggregate").Avg<T>, import("./Column").Aggregated> }
  */
 export function AVG(column) {
-  const value = literal(`MIN(${column.value.value})`);
-  return new Column(column.dbType, "aggregated", value);
+  /** @type {import("./Sql").SqlFunction} */
+  const fun = {
+    type: "function",
+    name: "AVG",
+    args: [column.value]
+  }
+  return new Column(column.dbType, "aggregated", fun);
 }
 
 /**
@@ -36,8 +52,13 @@ export function AVG(column) {
  * @returns { import("./column").Column<import("./Aggregate").Sum<T>, import("./Column").Aggregated> }
  */
 export function SUM(column) {
-  const value = literal(`SUM(${column.value.value})`);
-  return new Column(column.dbType, "aggregated", value);
+  /** @type {import("./Sql").SqlFunction} */
+  const fun = {
+    type: "function",
+    name: "SUM",
+    args: [column.value]
+  }
+  return new Column(column.dbType, "aggregated", fun);
 }
 
 /**
@@ -46,8 +67,13 @@ export function SUM(column) {
  * @returns { import("./column").Column<import("./Aggregate").ArrayAgg<T>, import("./Column").Aggregated> }
  */
 export function ARRAY_AGG(column) {
-  const value = literal(`ARRAY_AGG(${column.value.value})`);
-  return new Column(column.dbType, "aggregated", value);
+  /** @type {import("./Sql").SqlFunction} */
+  const fun = {
+    type: "function",
+    name: "ARRAY_AGG",
+    args: [column.value]
+  }
+  return new Column(column.dbType, "aggregated", fun);
 }
 
 /**
@@ -59,9 +85,24 @@ export function ARRAY_AGG(column) {
  * @returns { Column<Record<string, import("./Column").TsType<V>>, import("./Column").Aggregated> }
  */
 export function JSON_OBJECT_AGG(column1, column2) {
-  const value = literal(`JSON_OBJECT_AGG(${column1.value.value}, ${column1.value.value})`)
+  /** @type {import("./Sql").SqlFunction} */
+  const fun = {
+    type: "function",
+    name: "JSON_OBJECT_AGG",
+    args: [column1.value, column2.value]
+  }
   // @ts-ignore
-  return new Column(null, "aggregated", value)
+  const transformer = (obj) => {
+    const keys = Object.keys(obj)
+    return keys.reduce((acc, key) => {
+      return {
+        ...acc,
+        [key]: column2.dbType(obj[key])
+      }
+    }, {})
+  }
+  // @ts-ignore
+  return new Column(transformer, "aggregated", fun)
 }
 
 /**
@@ -71,7 +112,19 @@ export function JSON_OBJECT_AGG(column1, column2) {
  * @returns { Column<T[], import("./Column").Aggregated> }
  */
 export function JSON_AGG(column) {
-  const value = literal(`JSON_AGG(${column.value.value})`)
+
+  /** @type {import("./Sql").SqlFunction} */
+  const fun = {
+    type: "function",
+    name: "JSON_AGG",
+    args: [column.value]
+  }
   // @ts-ignore
-  return new Column(null, "aggregated", value)
+  const transformer = (arr) => {
+    // @ts-ignore
+    return arr.map(element => column.dbType(element))
+  }
+  // @ts-ignore
+  return new Column(transformer, "aggregated", fun)
+
 }

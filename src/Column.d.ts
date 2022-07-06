@@ -1,17 +1,5 @@
 import { NamedColumn, Column } from "./column"
 
-export type Literal = {
-    type: "literal",
-    value: any
-}
-
-export type Path = {
-    type: "path",
-    value: string,
-}
-
-export type ColumnValue = Literal | Path
-
 export type MapColumn<C, DbType, State extends ColumnState> =
     C extends NamedColumn<any, any, infer Name> ? NamedColumn<DbType, State, Name>
         : Column<DbType, State>

@@ -1,5 +1,5 @@
 import { toObj } from "./helpers"
-import { Column, path } from "./column"
+import { Column } from "./column"
 
 /**
  * @returns {import("./Sql").SelectQuery}
@@ -74,6 +74,9 @@ function printCondition(condition) {
             case "path": return arg.value
             case "binary": return `(${value(arg.arg1)} ${printOperator(arg.operator)} ${value(arg.arg2)})`
             case "negation": return `NOT ${value(arg)}`
+            case "function":
+                const args = arg.args.map(a => value(a)).join(", ")
+                return `${arg.name}(${args})`
         }
     }
     return value(condition)
@@ -87,7 +90,7 @@ function printCondition(condition) {
 export function print(sq, indentParam) {
     const indent = indentParam ? indentParam : 0
     const indentStr = [...Array(indent).keys()].map(_ => "\t").reduce((prev, current) => `${prev}${current}`, "")
-    const fields = sq.fields.map(field => field.expression + (field.as === null ? "" : ` AS ${field.as}`))
+    const fields = sq.fields.map(field => printCondition(field.expression) + (field.as === null ? "" : ` AS ${field.as}`))
         .reduce((prev, current) => `${prev}, ${current}`)
     const select = `SELECT ${fields}`
     const fromItems = sq.froms.map(fi => {
@@ -124,4 +127,15 @@ export function print(sq, indentParam) {
     const string = allElements.filter(e => e !== null).map(e => `${indentStr}${e}\n`)
         .reduce((prev, current) => `${prev}${current}`)
     return string
+}
+
+/**
+ * @param { string } str
+ * @returns { import("./Sql").SqlExpression }
+ */
+export function path(str) {
+    return {
+        type: "path",
+        value: str
+    }
 }

@@ -68,6 +68,28 @@ function walkSqlExpression(walk) {
                     arg2: arg2Walked.sql
                 }
             }
+        case "function": 
+
+            /** @type { (acc: WalkResult<SqlExpression[]>, curr: SqlExpression ) => WalkResult<SqlExpression[]> } */
+            const walkFunctionF = (acc, curr) => {
+                const walkedSqlExpression = walkSqlExpression({...acc, sql: curr})
+                return {
+                    ...walkedSqlExpression,
+                    sql: [...acc.sql, walkedSqlExpression.sql]
+                }
+            }
+            
+            /** @type { WalkResult<SqlExpression[]> } */
+            const start = {...walk, sql: []}
+
+            const walkReduced = walk.sql.args.reduce(walkFunctionF, start)
+            return {
+                ...walkReduced,
+                sql: {
+                    ...walk.sql,
+                    args: walkReduced.sql
+                }
+            }
     }
 }
 

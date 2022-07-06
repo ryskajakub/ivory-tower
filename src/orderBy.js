@@ -193,7 +193,7 @@ export class OrderBy extends Limit {
         // @ts-ignore
         const orderingElements = ab(orderingElementsInput)
         /** @type { import("./Sql").Order[] } */
-        const order = orderingElements.map(oe => ({ field: `${oe.field.value.value}`, direction: oe.direction }))
+        const order = orderingElements.map(oe => ({ field: `${oe.field.value}`, direction: oe.direction }))
 
         const newSql = {
             ...this.sql,

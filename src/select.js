@@ -31,7 +31,7 @@ export function SELECT(mkGroupedColumns, selectable) {
 
         /** @type {import("./Sql").Field} */
         const item = {
-            expression: current.value.value,
+            expression: current.value,
             as: as
         }
 

@@ -44,7 +44,7 @@ export class GroupBy {
         // @ts-ignore
         const fields = mkFields(union)
 
-        const paths = fields.map(c => c.value.value)
+        const paths = fields.map(c => c.value)
         const newSql = {
             ...this.sql,
             groupBy: paths,

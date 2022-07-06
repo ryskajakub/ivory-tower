@@ -8,16 +8,23 @@ import { Column } from "./column"
 export function JSON_BUILD_OBJECT(...x) {
     const values = x.map((value, index) => {
         if (index % 2 === 0) {
-            return `'${value}'`
+            /** @type {import("./Sql").Path} */
+            const path = {
+                type: "path",
+                value: `${value}`
+            }
+            return path
         } else {
             const column = /** @type { Column<any, any> } */ ( /** @type { unknown } */ (value))
-            return column.value.value
+            return column.value
         }
-    }).join(", ")
+    })
 
+    /** @type {import("./Sql").SqlFunction} */
     const value = {
-        type: "path",
-        value: `JSON_BUILD_OBJECT(${values})`
+        type: "function",
+        name: "JSON_BUILD_OBJECT",
+        args: values,
     }
 
     // @ts-ignore

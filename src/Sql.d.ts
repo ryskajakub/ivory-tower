@@ -15,7 +15,7 @@ export type FromItem = Readonly<{
 }>
 
 export type Field = Readonly<{
-    expression: string,
+    expression: SqlExpression,
     as: null | string
 }>
 
@@ -35,6 +35,8 @@ export type SelectQuery = Readonly<{
     as: string | null, 
 }>
 
+export type FunctionName = string
+
 export type Operator = "eq" | "gt" | "lt" | "gte" | "lte" | "and" | "or"
 
 export type Path = {
@@ -52,7 +54,13 @@ export type Negation = {
     arg: SqlExpression,
 }
 
-export type SqlExpression = Path | Literal | BinaryOperation | Negation
+export type SqlFunction = {
+    type: "function",
+    name: FunctionName,
+    args: SqlExpression[],
+}
+
+export type SqlExpression = Path | Literal | BinaryOperation | Negation | SqlFunction
 
 export type BinaryOperation = {
     type: "binary",

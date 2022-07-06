@@ -54,17 +54,7 @@ export class Expression {
  */
 function makeExpression (expression) {
   if (expression instanceof Column) {
-    if (expression.value.type === "literal") {
-      return {
-        type: "literal",
-        value: expression.value.value
-      }
-    } else {
-      return {
-        type: "path",
-        value: expression.value.value,
-      }
-    }
+    return expression.value
   } else {
     return {
       type: "literal",
