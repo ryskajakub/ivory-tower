@@ -105,6 +105,10 @@ export class Query {
     getSql = () => {
         return this.sql
     }
+
+    getColumns = () => {
+        return this.columns
+    }
 }
 
 /**

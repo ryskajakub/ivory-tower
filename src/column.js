@@ -4,7 +4,7 @@
  */
 export class Column {
     /**
-     * @param {DbType} dbType 
+     * @param {(dbType: DbType) => import("./Column").TsType<DbType>} dbType 
      * @param {State} state 
      * @param {import("./Column").ColumnValue} value 
      */
@@ -44,7 +44,7 @@ export class Column {
  */
 export class NamedColumn extends Column {
     /**
-     * @param {DbType} dbType 
+     * @param {(dbType: DbType) => import("./Column").TsType<DbType>} dbType 
      * @param {State} state 
      * @param {import("./Column").ColumnValue} value 
      * @param {Name} name

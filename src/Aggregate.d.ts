@@ -41,5 +41,3 @@ export type ArrayAgg<T> = T extends Column<infer DbType, any>
     ? never
     : DbType[]
   : never;
-
-// export type JsonObjectAgg<T> = 

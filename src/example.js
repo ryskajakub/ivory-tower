@@ -57,11 +57,13 @@ const initDb = async () => {
     create table people(
         id integer,
         name varchar(255),
-        age integer
+        age integer,
+        inserted timestamp with time zone
     );
-    insert into people (id, name, age) values(1, 'John', 20);
-    insert into people (id, name, age) values(2, 'Mary', 25);
-    insert into people (id, name, age) values(3, 'Bob', 30);
+    insert into people (id, name, age, inserted) values(1, 'John', 20, NOW());
+    insert into people (id, name, age, inserted) values(2, 'Mary', 25, NOW());
+    insert into people (id, name, age, inserted) values(3, 'Bob', 30, NOW());
+    insert into people (id, name, age, inserted) values(4, 'Alice', 30, NOW());
 
     drop table if exists pets;
     create table pets(
@@ -78,15 +80,14 @@ const initDb = async () => {
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
 
+await initDb()
 /*
 const q01 = SELECT(ab => [ab.people.name], FROM(persons))
 const q0 = q01.AS("xyz")
 
-await initDb()
 const result = await runQuery(q01)
 
 console.log(result)
-*/
 
 const q2 =
     SELECT((t) => [t.xxx.id, MAX(t.xxx.owner_id).AS("abc")],
@@ -102,3 +103,11 @@ const q2 =
 // const result2 = await runQuery(q2)
 console.log(print(q2.getSql()))
 // console.log(result2)
+*/
+
+// const result = await runRaw(`select 1, 2, age, json_object_agg(id, inserted) from people group by age`)
+const result = await runRaw(`select * from people`)
+console.log(result.rows.map(
+    // @ts-ignore
+    (x) => x["inserted"].constructor.name
+))

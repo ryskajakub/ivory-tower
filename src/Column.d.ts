@@ -54,7 +54,7 @@ export type Money = "money"
 
 export type All = Boolean | Numeric | Textual | Temporal | Interval | Money
 
-type TsType<Db> = Db extends Integer ? number :
+type TsType<Db> = Db extends Numeric ? number :
     Db extends Temporal ? Date :
     Db extends Textual ? string :
     never
@@ -64,3 +64,5 @@ type DbType<Ts> = Ts extends number ? "smallint" | "integer" :
     never
 
 export type ColumnDirection = "default" | "ASC" | "DESC"
+
+type T = "small" | "big" extends "big" ? true : false

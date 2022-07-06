@@ -7,6 +7,25 @@ import { walkSelectQuery } from "./walk";
 const { Client } = pkg;
 
 /**
+ * @param {{[key: string]: import("./column").Column<any, any>}} columns 
+ * @returns { (row: any) => any }
+ */
+function transformer(columns) {
+  return (row) => {
+    const keys = Object.keys(columns)
+    keys.reduce((acc, key) => {
+      const column = columns[key]
+      const entry = row[key]
+      const result = column.dbType(entry)
+      return {
+        ...acc,
+        [key]: result
+      }
+    }, {})
+  }
+}
+
+/**
  * @template { {[key: string]: import("./column").Column<any, any>} } T
  * @param { Query<T> } query
  * @returns { Promise<import("./Run").Ran<T>> }
@@ -26,12 +45,13 @@ export async function runQuery(query) {
   const params = walk.params
   const res = await client.query(sqlString, params);
   await client.end();
-  return res.rows;
+  const transformedRows = transformer(query.getColumns())(res.rows)
+  return transformedRows
 }
 
 /**
  * @param {string } rawQuery
- * @returns { Promise<void> }
+ * @returns { Promise<any> }
  */
 export async function runRaw(rawQuery) {
   const client = new Client({
@@ -42,6 +62,7 @@ export async function runRaw(rawQuery) {
     password: "db",
   });
   await client.connect();
-  await client.query(rawQuery);
+  const result = await client.query(rawQuery);
   await client.end();
+  return result
 }

@@ -35,7 +35,7 @@ export function fromItem(tableName) {
  */
 export function renameColumn(obj, key) {
     return toObj(Object.entries(obj).map(([colKey, colValue]) => [colKey,
-        new Column(colValue.type, "selectable", path(`${key}.${colKey}`))
+        new Column((x) => x, "selectable", path(`${key}.${colKey}`))
     ]))
 }
 
