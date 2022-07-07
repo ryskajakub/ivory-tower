@@ -74,3 +74,48 @@ export function ins(table, data) {
   }
 
 }
+
+/**
+ * @template { any[] } T
+ */
+export class Insert {
+
+  /**
+   * @param { Table<any> } table 
+   * @param { T } valueNames
+   */
+  constructor(table, valueNames) {
+    this.table = table
+    this.insertKeys = valueNames
+  }
+
+  /**
+   * @param { T } values 
+   * @returns { import("./Runnable").QueryAndParams<void, false> }
+   */
+  VALUES = (values) => {
+
+    const keys = this.insertKeys.join(", ")
+    const variables = [...Array(values.length).keys()].map(
+        k => `\$${k + 1}`
+    ).join(", ")
+
+    return {
+      query: `INSERT INTO ${this.table.name}(${keys}) VALUES(${variables})`,
+      params: values
+    }
+  }
+
+}
+
+/**
+ * @template T
+ * @template { readonly (keyof import("./Table").InsertType<T>)[] } U 
+ * @param { Table<T> } table
+ * @param { U } valueNames
+ * @returns { import("./Table").InsertKeys<U, import("./Table").InsertType<T>> }
+ */
+export function INSERT_INTO(table, valueNames) {
+  // @ts-ignore
+  return new Insert(table, valueNames)
+}

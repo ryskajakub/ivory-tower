@@ -5,7 +5,7 @@ import { SELECT } from "./select"
 import { MAX, MIN } from "./aggregate"
 import { runQuery, runRaw } from "./run"
 import { eq, gt } from "./expression"
-import { insert } from "./insert"
+import { insert, INSERT_INTO } from "./insert"
 
 /**
  * @typedef {{ people: { id: "smallint" | undefined, name: "text", age: "integer" | null | undefined }}} Person
@@ -78,11 +78,14 @@ const initDb = async () => {
     await insert(persons, {name: "pepa"})
     await insert(persons, {name: "karel"})
 
+
 }
 
+    const x = INSERT_INTO(persons, /** @type {const} */ (["name", "id"])).VALUES(["lojza", 3])
+    console.log(x)
 
-await initDb()
 /*
+await initDb()
 const q01 = SELECT(ab => [ab.people.name], FROM(persons))
 const q0 = q01.AS("xyz")
 
@@ -104,8 +107,8 @@ const q2 =
 // const result2 = await runQuery(q2)
 console.log(print(q2.getSql()))
 // console.log(result2)
-*/
 
 // const result = await runRaw(`select 1, 2, age, json_object_agg(id, inserted) from people group by age`)
 const result = await runRaw(`select * from people`)
 console.log(result.rows)
+*/
