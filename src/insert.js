@@ -2,10 +2,10 @@ import { Table } from "./table"
 
 import { print } from "./sql";
 
-// @ts-ignore
-import pkg from "pg";
+import * as pg from 'pg'
+const { Client } = pg
+
 import { walkSelectQuery } from "./walk";
-const { Client } = pkg;
 
 /**
  * @template T
@@ -43,3 +43,34 @@ export async function insert(t, data) {
   await client.end();
 }
 
+/**
+ * @template T
+ * @param {Table<T>} table 
+ * @param {import("./Table").InsertType<T>} data 
+ * @returns { import("./Runnable").QueryAndParams<void, false> }
+ */
+export function ins(table, data) {
+
+  const keys = Object.keys(data)
+
+  // @ts-ignore
+  const definedKeys = keys.filter(key => data[key] !== undefined)
+
+  const keysString = definedKeys.join(", ")
+
+  const variables = [...Array(definedKeys.length).keys()].map(
+      k => `\$${k + 1}`
+  ).join(", ")
+
+  // @ts-ignore
+  const values = definedKeys.map(k => data[k])
+
+  const sqlString = `INSERT INTO ${table.name}(${keysString}) VALUES(${variables})`
+
+  // @ts-ignore
+  return {
+    params: values,
+    query: sqlString
+  }
+
+}

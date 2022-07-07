@@ -1,4 +1,7 @@
 import { toObj } from "./helpers"
+import { transformer } from "./run";
+import { print } from "./sql";
+import { walkSelectQuery } from "./walk";
 
 export class FinalOrderingElement {
     /**
@@ -166,8 +169,14 @@ export class Limit extends Offset {
 }
 
 /**
+ * @template T
+ * @typedef { import("./Runnable").Runnable<T, true> } Runnable
+ */
+
+/**
  * @template { {[key: string]: import("./column").Column<any, any>} } T
  * @extends Limit<T>
+ * @implements { Runnable<T> }
  */
 export class OrderBy extends Limit {
 
@@ -177,6 +186,22 @@ export class OrderBy extends Limit {
      */
     constructor(sql, columns) {
         super(sql, columns)
+    }
+
+    /**
+     * @returns { import("./Runnable").QueryAndParams<T, true> }
+     */
+    getQueryAndParams = () => {
+
+        const walk = walkSelectQuery(this.sql)
+        const sqlString = print(walk.sql);
+
+        return {
+            params: walk.params,
+            query: sqlString,
+            // @ts-ignore
+            transformer: transformer,
+        }
     }
 
     /**

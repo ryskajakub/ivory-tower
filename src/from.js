@@ -26,8 +26,6 @@ export function FROM(table) {
     return new From(sql, {}, columns)
 }
 
-    // @ts-ignore
-
 /**
  * @template T
  * @typedef { import("./Select").Selectable<T> } Selectable

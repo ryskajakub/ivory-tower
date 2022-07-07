@@ -1,16 +1,15 @@
 import { Query } from "./orderBy";
 import { print } from "./sql";
 
-// @ts-ignore
-import pkg from "pg";
 import { walkSelectQuery } from "./walk";
-const { Client } = pkg;
+import * as pg from 'pg'
+const { Client } = pg
 
 /**
  * @param {{[key: string]: import("./column").Column<any, any>}} columns 
  * @returns { (row: any) => any }
  */
-function transformer(columns) {
+export function transformer(columns) {
   return (row) => {
     const keys = Object.keys(columns)
     keys.reduce((acc, key) => {
@@ -23,6 +22,24 @@ function transformer(columns) {
       }
     }, {})
   }
+}
+
+/**
+ * @template Row
+ * @template HasResult
+ * @param { (query: string, params: any[]) => Promise<import("pg").QueryResult> } runQuery
+ * @param {import("./Runnable").QueryAndParams<Row, HasResult>} queryAndParams
+ * @returns { Promise<import("./Runnable").Result<Row, HasResult>> }
+ */
+export async function getResult(runQuery, queryAndParams) {
+  const result = await runQuery(queryAndParams.query, queryAndParams.params)
+  // @ts-ignore
+  if (queryAndParams.transformer) {
+    // @ts-ignore
+    return result.rows.map((r) => queryAndParams.transformer(r))
+  }
+  // @ts-ignore
+  return ;
 }
 
 /**

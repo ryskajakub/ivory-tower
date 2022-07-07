@@ -16,7 +16,7 @@ export class Delete {
 
   /**
    * @param {(ab: import("./From").FromTable<T>) => Column<"boolean", "selectable"> } mkCondition
-   * @returns { { sql: string, params: any[] } }
+   * @returns { import("./Runnable").QueryAndParams<void, false> }
    */
   WHERE = (mkCondition) => {
     const table = this.table.def;
@@ -31,7 +31,7 @@ export class Delete {
     const printedCondition = printCondition(walkedCondition.sql)
 
     return {
-        sql: `DELETE FROM ${this.table.name} WHERE ${printedCondition}`,
+        query: `DELETE FROM ${this.table.name} WHERE ${printedCondition}`,
         params: walkedCondition.params
     }
 
