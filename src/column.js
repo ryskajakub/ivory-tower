@@ -1,3 +1,5 @@
+import { makeExpression } from "./expression"
+
 /**
  * @template DbType
  * @template {import("./Column").ColumnState} State
@@ -25,6 +27,23 @@ export class Column {
     AS = (as) => {
         return new NamedColumn(this.dbType, this.state, this.value, as)
     }
+
+  /**
+   * @template { import("./Column").SingleState } State2
+   * @param { Column<"boolean", State2> } expr2 
+   * @returns {import("./Expression").BoolOp<Column<DbType, State>, Column<"boolean", State2>>}
+   */
+  AND = (expr2) => {
+    /** @type { import("./Sql").BinaryOperation } */
+    const sql = {
+      type: "binary",
+      operator: "and",
+      arg1: this.value,
+      arg2: makeExpression(expr2),
+    }
+    // @ts-ignore
+    return new Expression(null, sql)
+  }
 }
 
 /**
