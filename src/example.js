@@ -15,7 +15,11 @@ import { create } from "./schema"
  */
 
 /**
- * @typedef {{ pets: { id: "smallint" | undefined, owner_id: "smallint", name: "text" } }} Pet
+ * @typedef {{ pets: { id: "smallint" | undefined, owner_id: "smallint", name: "text", race_id: "smallint" } }} Pet
+ */
+
+/**
+ * @typedef {{ races: { id: "smallint" | undefined, name: "text", discovered: "date" } }} Race
  */
 
 /**
@@ -60,67 +64,77 @@ const petsDef = {
         },
         owner_id: {
             type: "smallint"
+        },
+        race_id: {
+            type: "smallint"
+        }
+    }
+}
+
+/** @type {TableType<Race>} */
+const raceDef = {
+    races: {
+        id: {
+            type: "smallint",
+            default: {
+                type: "serial"
+            },
+        },
+        name: {
+            type: "text",
+        },
+        discovered: {
+            type: "date"
         }
     }
 }
 
 const persons = new Table(personsDef)
 const pets = new Table(petsDef)
+const races = new Table(raceDef)
 
-
-    /** @type { (query: string, params: any[]) => Promise<import("pg").QueryResult> } */
-    const q = async (query, params) => {
-        const client = getClient()
-        await client.connect();
-        const result = await client.query(query, params)
-        await client.end();
-        return result;
-    }
+/** @type { (query: string, params: any[]) => Promise<import("pg").QueryResult> } */
+const q = async (query, params) => {
+    const client = getClient()
+    await client.connect();
+    const result = await client.query(query, params)
+    await client.end();
+    return result;
+}
 
 const initDb = async () => {
 
     await getResult(q, create(persons, { drop: true }))
     await getResult(q, create(pets, { drop: true }))
+    await getResult(q, create(races, { drop: true }))
 
-    INSERT_INTO(persons, /** @type {const} */ (["id", "name", "age", "registered"])).VALUES([1, "franta", 15, new Date (2020, 1, 1)]) 
+    const personsFields = /** @type {const} */ (["id", "name", "age", "registered"])
 
-    /*
-    await runRaw(`
-    drop table if exists people;
+    await getResult(q, INSERT_INTO(persons, personsFields).VALUES([1, "franta", 15, new Date (2020, 1, 1)]))
+    await getResult(q, INSERT_INTO(persons, personsFields).VALUES([2, "pepa", 20, new Date (2021, 1, 1)]))
+    await getResult(q, INSERT_INTO(persons, personsFields).VALUES([3, "karel", 20, new Date (2021, 1, 1)]))
 
-    create table people(
-        id serial,
-        name varchar not null,
-        age integer,
-        birth_date date
-    );
+    await getResult(q, INSERT_INTO(races, /** @type {const} */ (["id", "name", "discovered"])).VALUES([1, "bulldog", new Date(1900, 1, 1)]))
+    await getResult(q, INSERT_INTO(races, /** @type {const} */ (["id", "name", "discovered"])).VALUES([1, "goldfish", new Date(900, 1, 1)]))
 
-    drop table if exists pets;
-    create table pets(
-        id integer,
-        owner_id integer
-    );
-    insert into pets (id, owner_id) values(1, 1);
-    insert into pets (id, owner_id) values(2, 2);
-    `)    
-
-    await runRaw(`
-    insert into pets (id, owner_id) values(3, \$1);
-    `, [255])
-    */
-
-
-    // await insert(persons, {name: "lojza"})
-    // await insert(persons, {name: "pepa"})
-    // await insert(persons, {name: "karel"})
-
+    await getResult(q, INSERT_INTO(pets, /** @type {const} */(["id", "name", "owner_id", "race_id"])).VALUES([1, "winston", 1, 1]))
+    await getResult(q, INSERT_INTO(pets, /** @type {const} */(["id", "name", "owner_id", "race_id"])).VALUES([2, "happiness", 1, 2]))
+    await getResult(q, INSERT_INTO(pets, /** @type {const} */(["id", "name", "owner_id", "race_id"])).VALUES([3, "luck", 2, 2]))
 
 }
 
-    // const x = INSERT_INTO(persons, /** @type {const} */ (["name", "id"])).VALUES(["lojza", 3])
-    // console.log(x)
-
 await initDb()
+
+const q1 = 
+    SELECT((t) => [t.people.id],
+    FROM(persons)
+        .JOIN(pets).ON(t => eq(t.people.id, t.pets.owner_id))
+        .JOIN(races).ON(t => eq(t.pets.race_id, t.races.id))
+        .GROUP_BY(t => [t.people.id])
+    )
+
+const result = getResult(q, q1.getQueryAndParams())
+
 /*
 const q01 = SELECT(ab => [ab.people.name], FROM(persons))
 const q0 = q01.AS("xyz")

@@ -39,7 +39,7 @@ export function create(table, options) {
 
     const fieldsRows = fields.join(",\n\t")
 
-    const drop = options.drop ? `DROP TABLE ${table.name}; ` : ``
+    const drop = options.drop ? `DROP TABLE IF EXISTS ${table.name}; ` : ``
 
     const query = 
 `${drop}
