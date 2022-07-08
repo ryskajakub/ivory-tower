@@ -14,5 +14,4 @@ export class Table {
         this.name = name
     }
 
-
 }

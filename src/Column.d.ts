@@ -24,7 +24,7 @@ export type Numeric = Integer | Float
 
 export type Text = "text"
 
-export type Date = "date"
+export type DbDate = "date"
 
 export type Time = "time"
 
@@ -32,7 +32,7 @@ export type Timestamp = "timestamp"
 
 export type Boolean = "boolean"
 
-export type Temporal = Date | Time | Timestamp
+export type Temporal = DbDate | Time | Timestamp
 
 export type Textual = Text
 
@@ -52,5 +52,3 @@ type DbType<Ts> = Ts extends number ? "smallint" | "integer" :
     never
 
 export type ColumnDirection = "default" | "ASC" | "DESC"
-
-type T = "small" | "big" extends "big" ? true : false

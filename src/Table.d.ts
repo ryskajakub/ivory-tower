@@ -1,15 +1,14 @@
-import { Temporal, Textual, Numeric } from "./Column"
+import { Temporal, Textual, Numeric, TsType, Integer } from "./Column"
 import { ExpandType, IsUniqueTuple } from "./Helpers"
 import { Insert } from "./insert"
 
-export type DefaultType<DbType> = DbType extends Numeric ? (number | "auto") :
-    DbType extends Textual ? string : never
+export interface Serial { 
+    type: "serial"
+}
 
-type ColumnType<DbType> =
-    DbType extends Numeric ? number :
-    DbType extends Textual ? string :
-    DbType extends Temporal ? Date :
-    never
+type T1 = 3 extends Serial ? true : false
+
+export type DefaultType<DbType> = DbType extends Integer ? (string | Serial) : string
 
 type UndefinedOptional<Obj> = ExpandType<{
     [Key in keyof Obj as undefined extends Obj[Key] ? Key : never]?: Obj[Key]
@@ -17,10 +16,10 @@ type UndefinedOptional<Obj> = ExpandType<{
         [Key in keyof Obj as undefined extends Obj[Key] ? never : Key]: Obj[Key]
     }>
 
-export type InsertTsType<DbType> = (null | undefined) extends DbType ? (null | undefined | ColumnType<DbType>) :
-    null extends DbType ? (null | ColumnType<DbType>) :
-    undefined extends DbType ? (undefined | ColumnType<DbType>) :
-    ColumnType<DbType>
+export type InsertTsType<DbType> = (null | undefined) extends DbType ? (null | undefined | TsType<DbType>) :
+    null extends DbType ? (null | TsType<DbType>) :
+    undefined extends DbType ? (undefined | TsType<DbType>) :
+    TsType<DbType>
 
 export type Check<DbType> = DefaultType<DbType> extends never ? never : DbType
 
