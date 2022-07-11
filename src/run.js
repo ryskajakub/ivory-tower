@@ -14,7 +14,7 @@ const { Client } = pg;
 export function transformer(columns) {
   return (row) => {
     const keys = Object.keys(columns);
-    keys.reduce((acc, key) => {
+    return keys.reduce((acc, key) => {
       const column = columns[key];
       const entry = row[key];
       const result = column.dbType(entry);

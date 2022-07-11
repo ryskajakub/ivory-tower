@@ -128,12 +128,21 @@ await initDb()
 const q1 = 
     SELECT((t) => [t.people.id],
     FROM(persons)
+    /*
         .JOIN(pets).ON(t => eq(t.people.id, t.pets.owner_id))
         .JOIN(races).ON(t => eq(t.pets.race_id, t.races.id))
         .GROUP_BY(t => [t.people.id])
+        */
     )
 
-const result = getResult(q, q1.getQueryAndParams())
+const qap = q1.getQueryAndParams()
+
+console.log(qap.query)
+console.log(qap.params)
+
+const result = await getResult(q, qap)
+
+console.log(result)
 
 /*
 const q01 = SELECT(ab => [ab.people.name], FROM(persons))

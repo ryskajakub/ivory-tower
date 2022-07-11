@@ -27,7 +27,7 @@ export type Order = {
 export type SelectQuery = Readonly<{
     froms: readonly FromItem[],
     where: SqlExpression | null,
-    groupBy: readonly string[],
+    groupBy: readonly SqlExpression[],
     fields: readonly Field[],
     order: readonly Order[]
     limit: number | null,

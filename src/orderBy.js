@@ -200,7 +200,7 @@ export class OrderBy extends Limit {
             params: walk.params,
             query: sqlString,
             // @ts-ignore
-            transformer: transformer,
+            transformer: transformer(this.columns),
         }
     }
 

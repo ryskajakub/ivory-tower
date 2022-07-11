@@ -118,7 +118,7 @@ export function print(sq, indentParam) {
 
     const from = `FROM\n${fromItems}`
     const where = sq.where === null ? null : (`WHERE ${printCondition(sq.where)}`)
-    const groupBy = sq.groupBy.length === 0 ? null : `GROUP BY ${sq.groupBy.reduce((prev, current) => `${prev}, ${current}`)}`
+    const groupBy = sq.groupBy.length === 0 ? null : `GROUP BY ${sq.groupBy.map(item => printCondition(item)).reduce((prev, current) => `${prev}, ${current}`)}`
     const order = sq.order.length === 0 ? null : `ORDER BY ${sq.order.map((ob) => ob.field + printDirection(ob.direction))}`
     const limit = sq.limit === null ? null : `LIMIT ${sq.limit}`
     const offset = sq.offset === null ? null : `OFFSET ${sq.offset}`
