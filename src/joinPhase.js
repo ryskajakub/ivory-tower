@@ -1,5 +1,6 @@
+import { Column } from "./column"
 import { From } from "./from"
-
+import { renameColumns } from "./sql"
 /**
  * @template T
  * @template U
@@ -11,12 +12,12 @@ export class JoinPhase {
      * @param {import("./Sql").SelectQuery} sql
      * @param {T} previousFroms 
      * @param {U} currentFrom 
-     * @param {string} tableName
+     * @param {import("./Sql").JoinKind} joinKind
      * @param {V} currentJoin
      * @param {string | null} as
      * @param { import("./From").JoinType } joinType
      */
-    constructor(sql, previousFroms, currentFrom, tableName, currentJoin, as, joinType) {
+    constructor(sql, previousFroms, currentFrom, joinKind, currentJoin, as, joinType) {
         /** @readonly @protected */
         this.sql = sql
         /** @readonly @protected */
@@ -24,7 +25,7 @@ export class JoinPhase {
         /** @readonly @protected */
         this.currentFrom = currentFrom
         /** @readonly @protected */
-        this.tableName = tableName
+        this.joinKind = joinKind
         /** @readonly @protected */
         this.currentJoin = currentJoin
         /** @readonly @protected */
@@ -34,7 +35,7 @@ export class JoinPhase {
     }
 
     /**
-     * @param {(ab: import("./From").On<T, U, V, Lateral>) => import("./Sql").Condition} mkCondition 
+     * @param { (ab: import("./From").On<T, U, V, Lateral>) => Column<"boolean", import("./Column").SingleState>} mkCondition 
      */
     ON = (mkCondition) => {
 
@@ -45,14 +46,15 @@ export class JoinPhase {
             ...this.currentJoin,
         }
 
-        // @ts-ignore
-        const onResult = mkCondition(union)
+        /** @type { any } */
+        const unionAny = union
+
+        const onResult = mkCondition(unionAny)
 
         /** @type {import("./Sql").Join} */
         const newJoin = {
-            tableName: this.tableName,
-            on: onResult,
-            as: this.as,
+            kind: this.joinKind,
+            on: onResult.value,
             type: this.joinType,
         }
 
@@ -81,13 +83,13 @@ export class JoinPhaseAs extends JoinPhase {
      * @param {import("./Sql").SelectQuery} sql
      * @param {T} previousFroms 
      * @param {U} currentFrom 
-     * @param {string} tableName
+     * @param {import("./Sql").JoinTable} joinTable
      * @param {V} currentJoin
      * @param {string | null} as
      * @param { import("./From").JoinType } joinType
      */
-    constructor(sql, previousFroms, currentFrom, tableName, currentJoin, as, joinType) {
-        super(sql, previousFroms, currentFrom, tableName, currentJoin, as, joinType)
+    constructor(sql, previousFroms, currentFrom, joinTable, currentJoin, as, joinType) {
+        super(sql, previousFroms, currentFrom, joinTable, currentJoin, as, joinType)
     }
 
     /**
@@ -98,13 +100,21 @@ export class JoinPhaseAs extends JoinPhase {
     AS = (name) => {
         const key0 = Object.keys(this.currentJoin)[0]
 
+        // @ts-ignore
+        const currentJoin = this.currentJoin[key0]
+        const currentJoinAs = renameColumns(currentJoin, name)
+
         const newCurrentJoin = {
-            // @ts-ignore
-            [name]: this.currentJoin[key0]
+            [name]: currentJoinAs
+        }
+
+        const newJoinTable = {
+            ...this.joinKind,
+            as: name,
         }
 
         // @ts-ignore
-        return new JoinPhase(this.sql, this.previousFroms, this.currentFrom, this.tableName, newCurrentJoin, name, this.joinType)
+        return new JoinPhase(this.sql, this.previousFroms, this.currentFrom, newJoinTable, newCurrentJoin, name, this.joinType)
     }
 
 }

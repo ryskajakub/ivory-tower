@@ -1,9 +1,62 @@
 import { Query } from "./orderBy";
 import { print } from "./sql";
 
+import { walkSelectQuery } from "./walk";
+
 // @ts-ignore
-import pkg from "pg";
-const { Client } = pkg;
+import pg from "pg"
+const { Client } = pg;
+
+/**
+ * @param {{[key: string]: import("./column").Column<any, any>}} columns
+ * @returns { (row: any) => any }
+ */
+export function transformer(columns) {
+  return (row) => {
+    const keys = Object.keys(columns);
+    return keys.reduce((acc, key) => {
+      const column = columns[key];
+      const entry = row[key];
+      const result = column.dbType(entry);
+      return {
+        ...acc,
+        [key]: result,
+      };
+    }, {});
+  };
+}
+
+/**
+ * @template Row
+ * @template HasResult
+ * @param { (query: string, params: any[]) => Promise<import("pg").QueryResult> } runQuery
+ * @param {import("./Runnable").QueryAndParams<Row, HasResult>} queryAndParams
+ * @returns { Promise<import("./Runnable").Result<import("./Runnable").ResultRow<Row>, HasResult>> }
+ */
+export async function getResult(runQuery, queryAndParams) {
+  const result = await runQuery(queryAndParams.query, queryAndParams.params);
+  // @ts-ignore
+  if (queryAndParams.transformer) {
+    // @ts-ignore
+    return result.rows.map((r) => queryAndParams.transformer(r));
+  }
+  // @ts-ignore
+  return;
+}
+
+/**
+ * @returns { Client }
+ */
+export function getClient() {
+  const client = new Client({
+    user: "db",
+    database: "db",
+    host: "127.0.0.1",
+    port: 5433,
+    password: "db",
+  });
+  return client
+}
 
 /**
  * @template { {[key: string]: import("./column").Column<any, any>} } T
@@ -20,17 +73,21 @@ export async function runQuery(query) {
   });
   await client.connect();
   const sql = query.getSql();
-  const sqlString = print(sql, 0);
-  const res = await client.query(sqlString);
+  const walk = walkSelectQuery(sql);
+  const sqlString = print(walk.sql);
+  const params = walk.params;
+  const res = await client.query(sqlString, params);
   await client.end();
-  return res.rows;
+  const transformedRows = transformer(query.getColumns())(res.rows);
+  return transformedRows;
 }
 
 /**
  * @param {string } rawQuery
- * @returns { Promise<void> }
+ * @param { any= } [params]
+ * @returns { Promise<any> }
  */
-export async function runRaw(rawQuery) {
+export async function runRaw(rawQuery, params) {
   const client = new Client({
     user: "db",
     database: "db",
@@ -39,6 +96,9 @@ export async function runRaw(rawQuery) {
     password: "db",
   });
   await client.connect();
-  await client.query(rawQuery);
+  const result = params
+    ? await client.query(rawQuery, params)
+    : await client.query(rawQuery);
   await client.end();
+  return result;
 }

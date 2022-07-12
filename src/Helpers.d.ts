@@ -1,8 +1,22 @@
 import { Aggregable, Aggregated, Selectable } from "./Column"
 import { NamedColumn, Column } from "./column"
-import { OrderingElement } from "./orderBy"
+import { OrderBy } from "./orderBy"
 
 type Disjoint<A, B> = Extract<A, B> extends never ? true : false
+
+export type TypeEquals<A, B> = A extends B ? (
+    B extends A ? true : false
+) : false
+
+export type TypeMap<Map extends [any, any][], T> = 
+    Map extends [infer First, ...infer Rest] ? (
+        First extends [infer A, infer B] ? (
+            TypeEquals<A, T> extends true ? B : 
+                (Rest extends [any, any][] ? TypeMap<Rest, T> : never)
+        ) : (
+            never
+        )
+    ) : never
 
 export type ExpandType<T> = {} & {
     [K in keyof T]: T[K]
@@ -16,7 +30,7 @@ export type DisjointUnion<Obj1, Obj2> = Obj1 extends Record<string, any> ? (
 
 export type AnyIntersection<A, B> = Extract<A, B> extends never ? false : true
 
-export type IfAnyIntersection<A, B, IfTrue> = AnyIntersection<A, B> extends never ? never : IfTrue
+export type IfAnyIntersection<A, B, IfTrue, IfFalse> = AnyIntersection<A, B> extends true ? IfTrue : IfFalse
 
 type BNotContainsA<A, B extends any[]> = B["length"] extends 0 ?
     true :
@@ -66,11 +80,9 @@ export type GroupByResult<T, V extends NamedColumn<any, any, any>[]> =
 export type MakeObj<T extends any[], Acc> = 
     T["length"] extends 0 ? Acc : 
     T extends [infer Col, ...infer Rest] ? 
-        Col extends NamedColumn<infer DbType, infer State, infer Name> ? (MakeObj<Rest, Acc & {
-            [K in Name]: Column<DbType, State>
+        Col extends NamedColumn<infer DbType, any, infer Name> ? (MakeObj<Rest, Acc & {
+            [K in Name]: Column<DbType, "selectable">
         }>) : never : never
 
 export type Select<T extends NamedColumn<any, any, any>[]> = 
-    AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? ExpandType<MakeObj<T, {}>> : never) : never
-
-type NamedColumns = [NamedColumn<any, any, "lol.lll">, NamedColumn<any, any, "p.xxx">]
+    AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? OrderBy<MakeObj<T, {}>> : never) : never

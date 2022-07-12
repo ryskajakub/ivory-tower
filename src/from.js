@@ -1,5 +1,5 @@
-import { empty, fromItem } from "./sql";
-import { JoinPhaseAs } from "./joinPhase"
+import { empty, fromItem, replaceExpressionsWithPaths } from "./sql";
+import { JoinPhase, JoinPhaseAs } from "./joinPhase"
 import { replaceValueWithColumn } from "./sql";
 import { Where } from "./groupBy";
 import { Table } from "./table";
@@ -25,8 +25,6 @@ export function FROM(table) {
             [table.getColumns(), { ...empty(), froms: [fromItem(table.getSql())] }] : [{}, empty()]
     return new From(sql, {}, columns)
 }
-
-    // @ts-ignore
 
 /**
  * @template T
@@ -78,20 +76,44 @@ export class From extends Where {
         super(sql, previousFroms, currentFrom)
     }
 
-    //  * @returns {JoinPhaseAs<T, U, import("./From").FromTableOrQuery<TableOrQuery>>}
-
     /**
      * @template TableOrQuery
      * @param { TableOrQuery } table 
      * @returns { import("./From").JoinTableOrQuery<T, U, TableOrQuery, false, Lateral> }
      */
     JOIN = (table) => {
+
+        if (table instanceof SubQuery) {
+            const currentJoin = replaceExpressionsWithPaths(table.getColumns())
+            /** @type { import("./Sql").JoinQuery } */
+            const joinKind = {
+                type:"JoinQuery",
+                query: table.getSql()
+            }
+            // @ts-ignore
+            return new JoinPhase(this.sql, this.previousFroms, this.currentFrom, joinKind, currentJoin, null, "inner")
+        } else {
+            // @ts-ignore
+            const currentJoin = replaceValueWithColumn(table.def)
+            /** @type { import("./Sql").JoinTable } */
+            const joinKind = {
+                // @ts-ignore
+                tableName: table.name,
+                type: "JoinTable",
+                as: null,
+            }
+            // @ts-ignore
+            return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, joinKind, currentJoin, null, "inner")
+        }
+
+        /*
         const currentJoin = table instanceof SubQuery ?
             table.getColumns() :
             // @ts-ignore
             replaceValueWithColumn(table.def)
         // @ts-ignore
         return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, table.name, currentJoin, null, "inner")
+        */
     }
 
     /**

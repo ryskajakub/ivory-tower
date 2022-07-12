@@ -2,10 +2,22 @@ import { ColumnDirection, SingleState } from "./Column"
 import { Column } from "./column"
 import { JoinType } from "./From"
 
-export type Join = Readonly<{
+export type JoinTable = {
+    type: "JoinTable",
     tableName: string,
-    on: Condition,
-    as: string | null,
+    as: string | null
+}
+
+export type JoinQuery = {
+    type: "JoinQuery",
+    query: SelectQuery,
+}
+
+export type JoinKind = JoinTable | JoinQuery
+
+export type Join = Readonly<{
+    kind: JoinKind,
+    on: SqlExpression,
     type: JoinType,
 }>
 
@@ -15,7 +27,7 @@ export type FromItem = Readonly<{
 }>
 
 export type Field = Readonly<{
-    expression: string,
+    expression: SqlExpression,
     as: null | string
 }>
 
@@ -26,8 +38,8 @@ export type Order = {
 
 export type SelectQuery = Readonly<{
     froms: readonly FromItem[],
-    where: Condition | null,
-    groupBy: readonly string[],
+    where: SqlExpression | null,
+    groupBy: readonly SqlExpression[],
     fields: readonly Field[],
     order: readonly Order[]
     limit: number | null,
@@ -35,13 +47,39 @@ export type SelectQuery = Readonly<{
     as: string | null, 
 }>
 
-export type Eq = {
-    type: "eq"
-    arg1: Column<any, SingleState>,
-    arg2: Column<any, SingleState>,
+export type FunctionName = string
+
+export type Operator = "eq" | "gt" | "lt" | "gte" | "lte" | "and" | "or"
+
+export type Path = {
+    type: "path",
+    value: string,
 }
 
-export type Condition = Eq
+export type Literal = {
+    type: "literal",
+    value: any
+}
+
+export type Negation = {
+    type: "negation",
+    arg: SqlExpression,
+}
+
+export type SqlFunction = {
+    type: "function",
+    name: FunctionName,
+    args: SqlExpression[],
+}
+
+export type SqlExpression = Path | Literal | BinaryOperation | Negation | SqlFunction
+
+export type BinaryOperation = {
+    type: "binary",
+    operator: Operator,
+    arg1: SqlExpression,
+    arg2: SqlExpression,
+}
 
 export type Ordering = {
     field: Column<any, any>,

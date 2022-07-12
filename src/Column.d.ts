@@ -1,17 +1,5 @@
 import { NamedColumn, Column } from "./column"
 
-export type Literal = {
-    type: "literal",
-    value: any
-}
-
-export type Path = {
-    type: "path",
-    value: string,
-}
-
-export type ColumnValue = Literal | Path
-
 export type MapColumn<C, DbType, State extends ColumnState> =
     C extends NamedColumn<any, any, infer Name> ? NamedColumn<DbType, State, Name>
         : Column<DbType, State>
@@ -28,24 +16,36 @@ export type ColumnState = Aggregable | SingleState
 
 export type Parametrized = true | false
 
-export type Numeric = "smallint" | "integer"
+export type Integer = "smallint" | "integer" | "bigint"
+
+export type Float = "real" | "double" | "numeric"
+
+export type Numeric = Integer | Float
 
 export type Text = "text"
 
-export type Date = "date"
+export type DbDate = "date"
 
 export type Time = "time"
 
 export type Timestamp = "timestamp"
 
-export type Temporal = Date | Time | Timestamp
+export type Boolean = "boolean"
+
+export type Temporal = DbDate | Time | Timestamp
 
 export type Textual = Text
 
-type TsType<Db> = Db extends "smallint" ? number :
-    Db extends "integer" ? number :
-    Db extends "text" ? string :
-    never
+export type Interval = "interval"
+
+export type Money = "money"
+
+export type All = Boolean | Numeric | Textual | Temporal | Interval | Money
+
+type TsType<Db> = Db extends Numeric ? number :
+    Db extends Temporal ? Date :
+    Db extends Textual ? string :
+    Db
 
 type DbType<Ts> = Ts extends number ? "smallint" | "integer" :
     Ts extends string ? "text" :

@@ -44,7 +44,7 @@ export class GroupBy {
         // @ts-ignore
         const fields = mkFields(union)
 
-        const paths = fields.map(c => c.value.value)
+        const paths = fields.map(c => c.value)
         const newSql = {
             ...this.sql,
             groupBy: paths,
@@ -81,7 +81,7 @@ export class Where extends GroupBy {
     }
 
     /**
-     * @param {(ab: import("./Helpers").DisjointUnion<T, U>) => import("./Sql").Condition} mkCondition 
+     * @param {(ab: import("./Helpers").DisjointUnion<T, U>) => import("./Sql").SqlExpression} mkCondition 
      */
     WHERE = (mkCondition) => {
         const union = {

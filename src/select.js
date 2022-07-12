@@ -6,7 +6,7 @@ import { OrderBy } from "./orderBy"
  * @template {[any, ...any[]]} U
  * @param { (ab: T) => U } mkGroupedColumns 
  * @param { import("./Select").Selectable<T> } selectable
- * @returns { import("./orderBy").OrderBy<import("./Helpers").Select<U>> }
+ * @returns { import("./Helpers").Select<U> }
  */
 export function SELECT(mkGroupedColumns, selectable) {
 
@@ -31,7 +31,7 @@ export function SELECT(mkGroupedColumns, selectable) {
 
         /** @type {import("./Sql").Field} */
         const item = {
-            expression: current.value.value,
+            expression: current.value,
             as: as
         }
 
