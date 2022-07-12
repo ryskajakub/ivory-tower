@@ -4,32 +4,26 @@ import { Table } from "./table"
 
 import { print } from "./sql"
 import { SELECT } from "./select"
-import { MAX, MIN } from "./aggregate"
+import { JSON_AGG, MAX, MIN } from "./aggregate"
 import { getClient, getResult, runQuery, runRaw } from "./run"
 import { eq, gt } from "./expression"
 import { insert, INSERT_INTO } from "./insert"
 import { create } from "./schema"
-
-/**
- * @typedef {{ people: { id: "smallint" | undefined, name: "text", age: "integer" | null | undefined , registered: "date" }}} Person
- */
-
-/**
- * @typedef {{ pets: { id: "smallint" | undefined, owner_id: "smallint", name: "text", race_id: "smallint" } }} Pet
- */
-
-/**
- * @typedef {{ races: { id: "smallint" | undefined, name: "text", discovered: "date" } }} Race
- */
+import { JSON_BUILD_OBJECT } from "./function"
+import { Column } from "./column"
 
 /**
  * @template T
  * @typedef {import("./Table").TableType<T>} TableType
  */
 
-/** @type {TableType<Person>} */
-const personsDef = {
-    people: {
+/**
+ * @typedef {{ manufacturer: { id: "smallint" | undefined, name: "text" }}} Manufacturer
+ */
+
+/** @type {TableType<Manufacturer>} */
+const manufacturerDef = {
+    manufacturer: {
         id: {
             type: "smallint",
             default: {
@@ -38,60 +32,67 @@ const personsDef = {
         },
         name: {
             type: "text",
+        }
+    }
+}
+
+/**
+ * @typedef {{ model: { id: "smallint" | undefined, manufacturer_id: "smallint", name: "text", launch_date: "date" } }} Model
+ */
+
+/** @type {TableType<Model>} */
+const modelDef = {
+    model: {
+        id: {
+            type: "smallint",
+            default: {
+                type: "serial"
+            },
         },
-        age: {
-            type: "integer",
+        name: {
+            type: "text",
+        },
+        manufacturer_id: {
+            type: "smallint"
+        },
+        launch_date: {
+            type: "date"
+        }
+    }
+}
+
+/**
+ * @typedef {{ car: { id: "smallint" | undefined, color: "text", plate: "text" | null, registered: "date", model_id: "smallint" } }} Car
+ */
+
+/** @type {TableType<Car>} */
+const carDef = {
+    car: {
+        id: {
+            type: "smallint",
+            default: {
+                type: "serial"
+            },
+        },
+        color: {
+            type: "text",
+        },
+        plate: {
             nullable: true,
-            default: "555"
+            type: "text",
         },
         registered: {
             type: "date"
-        }
-    }
-}
-
-/** @type {TableType<Pet>} */
-const petsDef = {
-    pets: {
-        id: {
+        },
+        model_id: {
             type: "smallint",
-            default: {
-                type: "serial"
-            },
-        },
-        name: {
-            type: "text",
-        },
-        owner_id: {
-            type: "smallint"
-        },
-        race_id: {
-            type: "smallint"
         }
     }
 }
 
-/** @type {TableType<Race>} */
-const raceDef = {
-    races: {
-        id: {
-            type: "smallint",
-            default: {
-                type: "serial"
-            },
-        },
-        name: {
-            type: "text",
-        },
-        discovered: {
-            type: "date"
-        }
-    }
-}
-
-const persons = new Table(personsDef)
-const pets = new Table(petsDef)
-const races = new Table(raceDef)
+const manufacturers = new Table(manufacturerDef)
+const models = new Table(modelDef)
+const cars = new Table(carDef)
 
 /** @type { (query: string, params: any[]) => Promise<import("pg").QueryResult> } */
 const q = async (query, params) => {
@@ -104,35 +105,37 @@ const q = async (query, params) => {
 
 const initDb = async () => {
 
-    await getResult(q, create(persons, { drop: true }))
-    await getResult(q, create(pets, { drop: true }))
-    await getResult(q, create(races, { drop: true }))
+    await getResult(q, create(manufacturers, { drop: true }))
+    await getResult(q, create(models, { drop: true }))
+    await getResult(q, create(cars, { drop: true }))
 
-    const personsFields = /** @type {const} */ (["id", "name", "age", "registered"])
+    await getResult(q, INSERT_INTO(manufacturers, /** @type {const} */(["id", "name"])).VALUES([1, "BMW"]))
+    await getResult(q, INSERT_INTO(manufacturers, /** @type {const} */(["id", "name"])).VALUES([2, "Skoda"]))
+    await getResult(q, INSERT_INTO(manufacturers, /** @type {const} */(["id", "name"])).VALUES([2, "Ford"]))
 
-    await getResult(q, INSERT_INTO(persons, personsFields).VALUES([1, "franta", 15, new Date (2020, 1, 1)]))
-    await getResult(q, INSERT_INTO(persons, personsFields).VALUES([2, "pepa", 20, new Date (2021, 1, 1)]))
-    await getResult(q, INSERT_INTO(persons, personsFields).VALUES([3, "karel", 20, new Date (2021, 1, 1)]))
+    await getResult(q, INSERT_INTO(models, /** @type {const} */ (["id", "name", "launch_date", "manufacturer_id"])).VALUES([1, "330i", new Date(2008, 1, 1), 1]))
+    await getResult(q, INSERT_INTO(models, /** @type {const} */ (["id", "name", "launch_date", "manufacturer_id"])).VALUES([2, "430i", new Date(2016, 1, 1), 1]))
+    await getResult(q, INSERT_INTO(models, /** @type {const} */ (["id", "name", "launch_date", "manufacturer_id"])).VALUES([3, "Octavia", new Date(1999, 1, 1), 2]))
 
-    await getResult(q, INSERT_INTO(races, /** @type {const} */ (["id", "name", "discovered"])).VALUES([1, "bulldog", new Date(1900, 1, 1)]))
-    await getResult(q, INSERT_INTO(races, /** @type {const} */ (["id", "name", "discovered"])).VALUES([1, "goldfish", new Date(900, 1, 1)]))
-
-    await getResult(q, INSERT_INTO(pets, /** @type {const} */(["id", "name", "owner_id", "race_id"])).VALUES([1, "winston", 1, 1]))
-    await getResult(q, INSERT_INTO(pets, /** @type {const} */(["id", "name", "owner_id", "race_id"])).VALUES([2, "happiness", 1, 2]))
-    await getResult(q, INSERT_INTO(pets, /** @type {const} */(["id", "name", "owner_id", "race_id"])).VALUES([3, "luck", 2, 2]))
+    await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([1, "silver", "7P8-3108", new Date(2018, 1, 1), 1]))
+    await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([2, "blue", "1A1-1234", new Date(2020, 1, 1), 1]))
+    await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([3, "black", "9A9-2345", new Date(2022, 1, 1), 2]))
 
 }
 
 await initDb()
 
+/** @type { Column<"smallint", any> } */
+// @ts-ignore
+const abc = null
+
+// const t = JSON_BUILD_OBJECT((["n", abc]))
+
 const q1 = 
-    SELECT((t) => [t.people.id],
-    FROM(persons)
-    /*
-        .JOIN(pets).ON(t => eq(t.people.id, t.pets.owner_id))
-        .JOIN(races).ON(t => eq(t.pets.race_id, t.races.id))
-        .GROUP_BY(t => [t.people.id])
-        */
+    SELECT((t) => [t.manufacturer.name.AS("manufacturer_name"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */ (["name", t.mode.name, "date", t.mode.launch_date]))).AS("model_names")],
+    FROM(manufacturers)
+        .JOIN(models).AS("mode").ON(t => eq(t.manufacturer.id, t.mode.manufacturer_id))
+        .GROUP_BY(t => [t.manufacturer.name])
     )
 
 const qap = q1.getQueryAndParams()
@@ -141,8 +144,7 @@ console.log(qap.query)
 console.log(qap.params)
 
 const result = await getResult(q, qap)
-
-console.log(result)
+console.log(JSON.stringify(result, undefined, 2))
 
 /*
 const q01 = SELECT(ab => [ab.people.name], FROM(persons))
@@ -171,3 +173,14 @@ console.log(print(q2.getSql()))
 const result = await runRaw(`select * from people`)
 console.log(result.rows)
 */
+
+/**
+ * @template {Readonly<any[]>} T
+ * @param {T} x 
+ * @returns T
+ */
+function lol(...x) {
+    return x
+}
+
+const t = lol(1)

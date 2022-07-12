@@ -1,5 +1,6 @@
 import { Aggregable, Aggregated, Selectable } from "./Column"
 import { NamedColumn, Column } from "./column"
+import { OrderBy } from "./orderBy"
 
 type Disjoint<A, B> = Extract<A, B> extends never ? true : false
 
@@ -84,4 +85,4 @@ export type MakeObj<T extends any[], Acc> =
         }>) : never : never
 
 export type Select<T extends NamedColumn<any, any, any>[]> = 
-    AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? ExpandType<MakeObj<T, {}>> : never) : never
+    AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? OrderBy<MakeObj<T, {}>> : never) : never

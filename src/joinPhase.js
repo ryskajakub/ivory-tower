@@ -1,6 +1,6 @@
 import { Column } from "./column"
 import { From } from "./from"
-import { renameColumn } from "./sql"
+import { renameColumns } from "./sql"
 /**
  * @template T
  * @template U
@@ -103,7 +103,7 @@ export class JoinPhaseAs extends JoinPhase {
 
         // @ts-ignore
         const currentJoin = this.currentJoin[key0]
-        const currentJoinAs = renameColumn(currentJoin, name)
+        const currentJoinAs = renameColumns(currentJoin, name)
 
         const newCurrentJoin = {
             [name]: currentJoinAs

@@ -107,8 +107,7 @@ export function JSON_OBJECT_AGG(column1, column2) {
 
 /**
  * @template T
- * @template { Column<T, import("./Column").Aggregable> } U
- * @param {U} column
+ * @param { Column<T, import("./Column").Aggregable> } column
  * @returns { Column<T[], import("./Column").Aggregated> }
  */
 export function JSON_AGG(column) {

@@ -29,14 +29,39 @@ export function fromItem(tableName) {
 }
 
 /**
+ * @param { { [key: string]: Column<any, any> } } obj 
+ * @param {string} key
+ * @returns { { [key: string]: import("./column").Column<any, any> } }
+ */
+export function renameColumns(obj, key) {
+    return toObj(Object.entries(obj).map(([colKey, column]) => {
+        return [colKey,
+            new Column(column.dbType, "selectable", path(`${key}.${colKey}`))
+        ]
+    }
+    ))
+}
+
+/**
  * @param { { [key: string]: { type: string } } } obj 
  * @param {string} key
  * @returns { { [key: string]: import("./column").Column<any, any> } }
  */
-export function renameColumn(obj, key) {
-    return toObj(Object.entries(obj).map(([colKey, colValue]) => [colKey,
-        new Column((x) => x, "selectable", path(`${key}.${colKey}`))
-    ]))
+export function makeColumns(obj, key) {
+    return toObj(Object.entries(obj).map(([colKey, colValue]) => { 
+        const mkTransformer = () => {
+            switch(colValue.type) {
+                // @ts-ignore
+                case "date": return ((x) => new Date(x))
+                // @ts-ignore
+                default: return ((x) => x)
+            }
+        }
+        return [
+            colKey,
+            new Column(mkTransformer(), "selectable", path(`${key}.${colKey}`))
+        ]
+    }))
 }
 
 /**
@@ -45,7 +70,7 @@ export function renameColumn(obj, key) {
  */
 export function replaceValueWithColumn(obj) {
     return toObj(Object.entries(obj).map(([key, value]) =>
-        [key, renameColumn(value, key)]
+        [key, makeColumns(value, key)]
     ))
 }
 

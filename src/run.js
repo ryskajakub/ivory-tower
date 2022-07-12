@@ -31,7 +31,7 @@ export function transformer(columns) {
  * @template HasResult
  * @param { (query: string, params: any[]) => Promise<import("pg").QueryResult> } runQuery
  * @param {import("./Runnable").QueryAndParams<Row, HasResult>} queryAndParams
- * @returns { Promise<import("./Runnable").Result<Row, HasResult>> }
+ * @returns { Promise<import("./Runnable").Result<import("./Runnable").ResultRow<Row>, HasResult>> }
  */
 export async function getResult(runQuery, queryAndParams) {
   const result = await runQuery(queryAndParams.query, queryAndParams.params);

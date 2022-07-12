@@ -1,17 +1,17 @@
 import { Column } from "./column"
 
 /**
- * @template A
- * @param { ...A } x
+ * @template {readonly any[]} A
+ * @param { A } args
  * @returns { import("./Function").JsonBuildObject<A> }
  */
-export function JSON_BUILD_OBJECT(...x) {
-    const values = x.map((value, index) => {
+export function JSON_BUILD_OBJECT(args) {
+    const values = args.map((value, index) => {
         if (index % 2 === 0) {
             /** @type {import("./Sql").Path} */
             const path = {
                 type: "path",
-                value: `${value}`
+                value: `'${value}'`
             }
             return path
         } else {
@@ -29,10 +29,12 @@ export function JSON_BUILD_OBJECT(...x) {
 
     // @ts-ignore
     const transformer = (obj) => {
-        return [...Array(x.length / 2)].reduce((acc, i) => {
-            const key = /** @type {string} */ ( /** @type {unknown} */(x[i * 2]))
-            const column = /** @type {Column<any, any>} */ (/** @type {unknown} */ (x[i * 2 + 1]))
+        return [...Array(args.length / 2).keys()].reduce((acc, i) => {
+
+            const key = /** @type {string} */ ( /** @type {unknown} */(args[i * 2]))
+            const column = /** @type {Column<any, any>} */ (/** @type {unknown} */ (args[i * 2 + 1]))
             const value = obj[key]
+
             return {
                 ...acc,
                 // @ts-ignore
