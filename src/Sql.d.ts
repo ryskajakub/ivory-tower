@@ -2,10 +2,22 @@ import { ColumnDirection, SingleState } from "./Column"
 import { Column } from "./column"
 import { JoinType } from "./From"
 
-export type Join = Readonly<{
+export type JoinTable = {
+    type: "JoinTable",
     tableName: string,
+    as: string | null
+}
+
+export type JoinQuery = {
+    type: "JoinQuery",
+    query: SelectQuery,
+}
+
+export type JoinKind = JoinTable | JoinQuery
+
+export type Join = Readonly<{
+    kind: JoinKind,
     on: SqlExpression,
-    as: string | null,
     type: JoinType,
 }>
 

@@ -33,13 +33,27 @@ export function fromItem(tableName) {
  * @param {string} key
  * @returns { { [key: string]: import("./column").Column<any, any> } }
  */
-export function renameColumns(obj, key) {
+export function expressionToPath(obj, key) {
     return toObj(Object.entries(obj).map(([colKey, column]) => {
-        return [colKey,
+        return [
+            colKey,
             new Column(column.dbType, "selectable", path(`${key}.${colKey}`))
         ]
-    }
-    ))
+    }))
+}
+
+/**
+ * @param { { [key: string]: Column<any, any> } } obj 
+ * @param {string} key
+ * @returns { { [key: string]: import("./column").Column<any, any> } }
+ */
+export function renameColumns(obj, key) {
+    return toObj(Object.entries(obj).map(([colKey, column]) => {
+        return [
+            colKey,
+            new Column(column.dbType, "selectable", path(`${key}.${colKey}`))
+        ]
+    }))
 }
 
 /**
@@ -71,6 +85,16 @@ export function makeColumns(obj, key) {
 export function replaceValueWithColumn(obj) {
     return toObj(Object.entries(obj).map(([key, value]) =>
         [key, makeColumns(value, key)]
+    ))
+}
+
+/**
+ * @param {{ [key: string]: { [key: string]: import("./column").Column<any, any> } }} obj 
+ * @returns {{ [key: string]: { [key: string]: import("./column").Column<any, any> } }}
+ */
+export function replaceExpressionsWithPaths(obj) {
+    return toObj(Object.entries(obj).map(([key, value]) =>
+        [key, expressionToPath(value, key)]
     ))
 }
 
@@ -128,7 +152,19 @@ export function print(sq, indentParam) {
                 case "inner": return "JOIN"
             }
         }
-        const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + ` ${join.tableName}` + (join.as === null ? "" : ` AS ${join.as}` ) + (` ON ${printCondition(join.on)}`)).reduce((prev, current) => `${prev}${current}`, "")
+
+        /** @type {(joinKind: import("./Sql").JoinKind) => string } */
+        const mkJoinKind = (joinKind) => {
+            switch (joinKind.type) {
+                case "JoinTable": 
+                    return ` ${joinKind.tableName}` + (joinKind.as === null ? "" : ` AS ${joinKind.as}` )
+                case "JoinQuery":
+                    return `(\n${print(joinKind.query, indent + 2)}) AS ${joinKind.query.as}`
+
+            }
+        } 
+
+        const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + mkJoinKind(join.kind) + (` ON ${printCondition(join.on)}`)).reduce((prev, current) => `${prev}${current}`, "")
         return `${f1}${joins}`
     }).reduce((prev, current) => `${prev},\n${current}`)
 

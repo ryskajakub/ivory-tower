@@ -131,56 +131,27 @@ const abc = null
 
 // const t = JSON_BUILD_OBJECT((["n", abc]))
 
+const modelsCarsQuery = 
+    SELECT(t => [t.model.id, MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
+        FROM(models)
+            .JOIN(cars).AS("c").ON(t => eq(t.c.model_id, t.model.id))
+            .GROUP_BY(t => [t.model.id])
+    )
+    
+    
+
 const q1 = 
-    SELECT((t) => [t.manufacturer.name.AS("manufacturer_name"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */ (["name", t.mode.name, "date", t.mode.launch_date]))).AS("model_names")],
+    SELECT((t) => [t.manufacturer.id, JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */ (["model_id", t.mcq.id, "name", t.mcq.name, "cars", t.mcq.cars1, "model_launched", t.mcq.ld]))).AS("models")],
     FROM(manufacturers)
-        .JOIN(models).AS("mode").ON(t => eq(t.manufacturer.id, t.mode.manufacturer_id))
-        .GROUP_BY(t => [t.manufacturer.name])
+        .JOIN(modelsCarsQuery.AS("mcq")).ON(t => eq(t.manufacturer.id, t.mcq.id))
+        .GROUP_BY(t => [t.manufacturer.id])
     )
 
 const qap = q1.getQueryAndParams()
 
+console.log("Query:")
 console.log(qap.query)
-console.log(qap.params)
 
 const result = await getResult(q, qap)
+console.log("Result:")
 console.log(JSON.stringify(result, undefined, 2))
-
-/*
-const q01 = SELECT(ab => [ab.people.name], FROM(persons))
-const q0 = q01.AS("xyz")
-
-const result = await runQuery(q01)
-
-console.log(result)
-
-const q2 =
-    SELECT((t) => [t.xxx.id, MAX(t.xxx.owner_id).AS("abc")],
-        FROM(persons)
-            .LEFT_JOIN(pets).AS("xxx").ON(t => eq(t.xxx.owner_id, t.people.id).AND(eq(t.xxx.id, 5)))
-            .JOIN(pets).ON(t => gt(t.pets.id, 5))
-            .GROUP_BY(t => [t.xxx.id])
-    )
-    .ORDER_BY(ab => [ab.id])
-    .LIMIT(1)
-    .OFFSET(1)
-
-// const result2 = await runQuery(q2)
-console.log(print(q2.getSql()))
-// console.log(result2)
-
-// const result = await runRaw(`select 1, 2, age, json_object_agg(id, inserted) from people group by age`)
-const result = await runRaw(`select * from people`)
-console.log(result.rows)
-*/
-
-/**
- * @template {Readonly<any[]>} T
- * @param {T} x 
- * @returns T
- */
-function lol(...x) {
-    return x
-}
-
-const t = lol(1)
