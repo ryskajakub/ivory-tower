@@ -112,7 +112,7 @@ const initDb = async () => {
 
     await getResult(q, INSERT_INTO(manufacturers, /** @type {const} */(["id", "name"])).VALUES([1, "BMW"]))
     await getResult(q, INSERT_INTO(manufacturers, /** @type {const} */(["id", "name"])).VALUES([2, "Skoda"]))
-    await getResult(q, INSERT_INTO(manufacturers, /** @type {const} */(["id", "name"])).VALUES([2, "Ford"]))
+    await getResult(q, INSERT_INTO(manufacturers, /** @type {const} */(["id", "name"])).VALUES([3, "Ford"]))
 
     await getResult(q, INSERT_INTO(models, /** @type {const} */ (["id", "name", "launch_date", "manufacturer_id"])).VALUES([1, "330i", new Date(2008, 1, 1), 1]))
     await getResult(q, INSERT_INTO(models, /** @type {const} */ (["id", "name", "launch_date", "manufacturer_id"])).VALUES([2, "430i", new Date(2016, 1, 1), 1]))
@@ -120,35 +120,44 @@ const initDb = async () => {
 
     await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([1, "silver", "7P8-3108", new Date(2018, 1, 1), 1]))
     await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([2, "blue", "1A1-1234", new Date(2020, 1, 1), 1]))
-    await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([2, "blue", "1A2-2345", new Date(2021, 1, 1), 1]))
-    await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([3, "black", "9A9-2345", new Date(2022, 1, 1), 2]))
+    await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([3, "blue", "1A2-2345", new Date(2021, 1, 1), 1]))
+    await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([4, "black", "9A9-2345", new Date(2022, 1, 1), 2]))
+    await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([5, "yellow", "9A8-2345", new Date(2022, 1, 1), 3]))
 
 }
 
 await initDb()
 
-// const q1 = 
-//     SELECT((t) => [t.manufacturer.id, MAX(t.manufacturer.name).AS("name"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */ (["model_id", t.mcq.id, "name", t.mcq.name, "cars", t.mcq.cars1, "model_launched", t.mcq.ld]))).AS("models")],
-//     FROM(manufacturers)
-//         .JOIN(
-//             SELECT(t => [t.model.id, MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
-//                 FROM(models)
-//                     .JOIN(cars).AS("c").ON(t => eq(t.c.model_id, t.model.id))
-//                     .WHERE(t => SUBSTRING(/** @type {const} */ ([t.c.color, "FROM", 2])))
-//                     .GROUP_BY(t => [t.model.id])
-//             ).AS("mcq")
-//         ).ON(t => eq(t.manufacturer.id, t.mcq.id))
-//         .GROUP_BY(t => [t.manufacturer.id])
-//     )
+const q0 =
+    SELECT(t => [t.model.id, MAX(t.model.manufacturer_id).AS("manufacturer_id"), MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
+        FROM(models)
+            .JOIN(cars).AS("c").ON(t => eq(t.c.model_id, t.model.id))
+            .WHERE(t => SUBSTRING(/** @type {const} */ ([t.c.plate, "FROM", 2, "FOR", 1])).op("=", "A"))
+            .GROUP_BY(t => [t.model.id])
+    )
 
-// const qap = q1.getQueryAndParams()
+const q1 = SELECT(
+    t => [t.mcq.manufacturer_id, JSON_AGG(JSON_BUILD_OBJECT( /** @type {const} */ (['cars', t.mcq.cars1, 'name', t.mcq.name]))).AS("models")] , 
+    FROM(models)
+        .JOIN(q0.AS("mcq"))
+        .ON(t => eq(t.model.id, t.mcq.id) )
+        .GROUP_BY(t => [t.mcq.manufacturer_id])
+    )
 
-// console.log("Query:")
-// console.log(qap.query)
+const q2 = 
+    SELECT((t) => [t.manufacturer.id, t.manufacturer.name, t.mcq0.models],
+    FROM(manufacturers)
+        .JOIN(q1.AS("mcq0")).ON(t => eq(t.manufacturer.id, t.mcq0.manufacturer_id))
+    )
 
-// console.log(("Params:"))
-// console.log(qap.params)
+const qap = q2.getQueryAndParams()
 
-// const result = await getResult(q, qap)
-// console.log("Result:")
-// console.log(JSON.stringify(result, undefined, 2))
+console.log("Query:")
+console.log(qap.query)
+
+console.log(("Params:"))
+console.log(qap.params)
+
+const result = await getResult(q, qap)
+console.log("Result:")
+console.log(JSON.stringify(result, undefined, 2))
