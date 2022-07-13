@@ -81,7 +81,7 @@ export class Where extends GroupBy {
     }
 
     /**
-     * @param {(ab: import("./Helpers").DisjointUnion<T, U>) => import("./Sql").SqlExpression} mkCondition 
+     * @param {(ab: import("./Helpers").DisjointUnion<T, U>) => Column<"boolean", import("./Column").SingleState>} mkCondition 
      */
     WHERE = (mkCondition) => {
         const union = {
@@ -95,7 +95,7 @@ export class Where extends GroupBy {
         /** @type {import("./Sql").SelectQuery} */
         const newSql = {
             ...this.sql,
-            where: conditionResult
+            where: conditionResult.value
         }
 
         return new GroupBy(newSql, this.previousFroms, this.currentFrom)

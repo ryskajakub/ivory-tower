@@ -73,7 +73,13 @@ export type SqlFunction = {
     args: SqlExpression[],
 }
 
-export type SqlExpression = Path | Literal | BinaryOperation | Negation | SqlFunction
+export type AnyFormFunction = {
+    type: "anyFormFunction",
+    print: (args: SqlExpression[], printSqlExpression: ((e: SqlExpression) => string)) => string,
+    args: SqlExpression[],
+}
+
+export type SqlExpression = Path | Literal | BinaryOperation | Negation | SqlFunction | AnyFormFunction
 
 export type BinaryOperation = {
     type: "binary",

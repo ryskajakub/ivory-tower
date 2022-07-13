@@ -86,3 +86,10 @@ export type MakeObj<T extends any[], Acc> =
 
 export type Select<T extends NamedColumn<any, any, any>[]> = 
     AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? OrderBy<MakeObj<T, {}>> : never) : never
+
+export type TupleToUnion<T> =
+    T extends readonly []
+      ? never
+      : (T extends readonly [infer First, ...infer Rest]
+            ? First | TupleToUnion<Rest>
+            : never);

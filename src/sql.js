@@ -126,6 +126,7 @@ export function printCondition(condition) {
             case "function":
                 const args = arg.args.map(a => value(a)).join(", ")
                 return `${arg.name}(${args})`
+            case "anyFormFunction": return arg.print(arg.args, value)
         }
     }
     return value(condition)
@@ -198,5 +199,29 @@ export function path(str) {
     return {
         type: "path",
         value: str
+    }
+}
+
+/**
+ * @template { any | (readonly any[]) } T
+ * @param {T} args
+ * @returns { ( print: ((args: T, printSqlExpression: ((e: import("./Sql").SqlExpression) => string)) => string) ) => import("./Sql").AnyFormFunction }
+ */
+export function anyFormFunction(args) {
+    return (print) => {
+
+        /** @type { (x: import("./walk").SqlExpression[]) => string } */
+        // @ts-ignore
+        const printTakingArray = Array.isArray(args) ? print : (x) => print(x[0])
+
+        /** @type { import("./Sql").AnyFormFunction } */
+        const result = {
+            type: "anyFormFunction",
+            // @ts-ignore
+            print: printTakingArray,
+            // @ts-ignore
+            args
+        }
+        return result
     }
 }

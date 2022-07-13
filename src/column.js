@@ -1,5 +1,7 @@
 import { makeExpression } from "./expression"
 
+export const OPS = /** @type {const} */ (["=", ">="])
+
 /**
  * @template DbType
  * @template {import("./Column").ColumnState} State
@@ -31,7 +33,7 @@ export class Column {
   /**
    * @template { import("./Column").SingleState } State2
    * @param { Column<"boolean", State2> } expr2 
-   * @returns {import("./Expression").BoolOp<Column<DbType, State>, Column<"boolean", State2>>}
+   * @returns {import("./Expression").BoolOpFlat<DbType, State, "boolean", State2>}
    */
   AND = (expr2) => {
     /** @type { import("./Sql").BinaryOperation } */
@@ -44,6 +46,19 @@ export class Column {
     // @ts-ignore
     return new Expression(null, sql)
   }
+
+  /**
+   * @template T
+   * @param { import("./Helpers").TupleToUnion<typeof OPS> } operator
+   * @param { T } operand
+   * @returns { import("./Expression").Op<DbType, State, T> }
+   */
+  op = (operator, operand) => {
+    switch (operator) {
+      case 
+    }
+  }
+
 }
 
 /**

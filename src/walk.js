@@ -93,6 +93,30 @@ function walkSqlExpressionInternal(walk) {
                     args: walkReduced.sql
                 }
             }
+        case "anyFormFunction":
+
+            /** @type { (acc: WalkResult<SqlExpression[]>, curr: SqlExpression ) => WalkResult<SqlExpression[]> } */
+            const walkAnyFormFunctionF = (acc, curr) => {
+
+                const walkedSqlExpression = walkSqlExpressionInternal({...acc, sql: curr})
+
+                return {
+                    ...walkedSqlExpression,
+                    sql: [...acc.sql, walkedSqlExpression.sql]
+                }
+            }
+
+            /** @type { WalkResult<SqlExpression[]> } */
+            const start2 = {...walk, sql: []}
+
+            const walkAnyFormFReduced = walk.sql.args.reduce(walkAnyFormFunctionF, start2)
+            return {
+                ...walkAnyFormFReduced,
+                sql: {
+                    ...walk.sql,
+                    args: walkAnyFormFReduced.sql
+                }
+            }
 
     }
 }
@@ -137,8 +161,6 @@ export function walkSelectQueryInternal(walk) {
     }
 
     const walkFields = walk.sql.fields.reduce(walkFieldsF, {...walk, sql: []})
-
-    // console.log(JSON.stringify(walkFields, undefined, 2))
 
     /** @type { (acc: WalkResult<FromItem[]>, curr: FromItem) => WalkResult<FromItem[]> } */
     const walkFromsF = (acc, curr) => {
@@ -189,9 +211,6 @@ export function walkSelectQueryInternal(walk) {
                 ...currJoin,
                 on: walkOnResult.sql
             })
-
-            console.log("join")
-            console.log(JSON.stringify(join, undefined, 2))
 
             return {
                 ...walkOnResult,

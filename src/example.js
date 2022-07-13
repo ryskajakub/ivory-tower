@@ -11,6 +11,7 @@ import { insert, INSERT_INTO } from "./insert"
 import { create } from "./schema"
 import { JSON_BUILD_OBJECT } from "./function"
 import { Column } from "./column"
+import { SUBSTRING } from "./function/string"
 
 /**
  * @template T
@@ -126,39 +127,27 @@ const initDb = async () => {
 
 await initDb()
 
-/** @type { Column<"smallint", any> } */
-// @ts-ignore
-const abc = null
+// const q1 = 
+//     SELECT((t) => [t.manufacturer.id, MAX(t.manufacturer.name).AS("name"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */ (["model_id", t.mcq.id, "name", t.mcq.name, "cars", t.mcq.cars1, "model_launched", t.mcq.ld]))).AS("models")],
+//     FROM(manufacturers)
+//         .JOIN(
+//             SELECT(t => [t.model.id, MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
+//                 FROM(models)
+//                     .JOIN(cars).AS("c").ON(t => eq(t.c.model_id, t.model.id))
+//                     .WHERE(t => SUBSTRING(/** @type {const} */ ([t.c.color, "FROM", 2])))
+//                     .GROUP_BY(t => [t.model.id])
+//             ).AS("mcq")
+//         ).ON(t => eq(t.manufacturer.id, t.mcq.id))
+//         .GROUP_BY(t => [t.manufacturer.id])
+//     )
 
-// const t = JSON_BUILD_OBJECT((["n", abc]))
+// const qap = q1.getQueryAndParams()
 
-const m = SELECT(t => [t.model.id, MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
-                FROM(models)
-                    .JOIN(cars).AS("c").ON(t => eq(t.c.model_id, t.model.id))
-                    .GROUP_BY(t => [t.model.id])
-            )
-    
+// console.log("Query:")
+// console.log(qap.query)
 
-const q1 = 
-    SELECT((t) => [t.manufacturer.id, JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */ (["model_id", t.mcq.id, "name", t.mcq.name, "cars", t.mcq.cars1, "model_launched", t.mcq.ld]))).AS("models")],
-    FROM(manufacturers)
-        .JOIN(
-            SELECT(t => [t.model.id, MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
-                FROM(models)
-                    .JOIN(cars).AS("c").ON(t => eq(t.c.model_id, t.model.id))
-                    .GROUP_BY(t => [t.model.id])
-            ).AS("mcq")
-        ).ON(t => eq(t.manufacturer.id, t.mcq.id))
-        .GROUP_BY(t => [t.manufacturer.id])
-    )
-
-const qap = q1.getQueryAndParams()
-
-console.log("Query:")
-console.log(qap.query)
-
-console.log(("Params:"))
-console.log(qap.params)
+// console.log(("Params:"))
+// console.log(qap.params)
 
 // const result = await getResult(q, qap)
 // console.log("Result:")

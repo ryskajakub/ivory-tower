@@ -21,3 +21,9 @@ export type BoolOp<Arg1, Arg2> =
         MixedTsDbBinOp<Arg1, Arg2Type, Column<Boolean, Arg2State>> :
         IfAnyIntersection<Arg1, Arg2, Column<Boolean, "selectable">, unknown>
     )
+
+export type BoolOpFlat<Arg1Type, Arg1State extends ColumnState, Arg2Type, Arg2State extends ColumnState> = BoolOp<Column<Arg1Type, Arg1State>, Column<Arg2Type, Arg2State>>
+
+export type Op<DbType, State extends ColumnState, Operand> =
+    Operand extends TsType<DbType> | null ?
+    (Column<"boolean", State>) : unknown

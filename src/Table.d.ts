@@ -1,12 +1,10 @@
 import { Temporal, Textual, Numeric, TsType, Integer } from "./Column"
-import { ExpandType, IsUniqueTuple } from "./Helpers"
+import { ExpandType, IsUniqueTuple, TupleToUnion } from "./Helpers"
 import { Insert } from "./insert"
 
 export interface Serial { 
     type: "serial"
 }
-
-type T1 = 3 extends Serial ? true : false
 
 export type DefaultType<DbType> = DbType extends Integer ? (string | Serial) : string
 
@@ -64,28 +62,9 @@ export type InsertKeys<Keys extends readonly (keyof T)[], T extends Record<strin
         : never
     ) : never
 
-type Rec = Readonly<{
-    abc: number,
-    def: string,
-    xyz: boolean,
-}>
-
-type T = InsertKeys<readonly ["abc", "xyz"], Rec>
-
-type F = { xyz: "xxx" }
-
 type AllUsedWithUnion<KeysUnion, T extends Record<string, any>> = 
     {} extends {
         [K in keyof T as undefined extends T[K] ? never : ( K extends KeysUnion ? never : K )]: T[K]
     } ? true : false
 
-type TupleToUnion<T> =
-    T extends []
-      ? never
-      : (T extends [infer First, ...infer Rest]
-            ? First | TupleToUnion<Rest>
-            : never);
-
 type AllUsed<Keys, T extends Record<string, any>> = AllUsedWithUnion<TupleToUnion<Keys>, T>
-
-type TTTTT = AllUsed<["wtf", "lol", "mmm"], { abc: number | undefined, mmm: 333, wtf: 555 , bla: 666}>
