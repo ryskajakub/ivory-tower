@@ -12,6 +12,7 @@ export function makeExpression (expression) {
     return {
       type: "literal",
       value: expression,
+      dbType: null,
     }
   }
 }

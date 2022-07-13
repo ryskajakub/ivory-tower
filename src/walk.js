@@ -35,13 +35,14 @@ import { Column } from "./column";
 function walkSqlExpressionInternal(walk) {
     switch(walk.sql.type ) {
         case "literal": 
+            const dbType = walk.sql.dbType === null ? '' : `::${walk.sql.dbType}`
             return {
                 sql: {
                     type: "path",
-                    value: '$' + walk.param
+                    value: '$' + walk.param + dbType
                 },
                 param: walk.param + 1,
-                params: [walk.sql.value ,...walk.params]
+                params: [...walk.params, walk.sql.value]
             }
         case "path": return walk
         case "negation": 
@@ -73,6 +74,7 @@ function walkSqlExpressionInternal(walk) {
             /** @type { (acc: WalkResult<SqlExpression[]>, curr: SqlExpression ) => WalkResult<SqlExpression[]> } */
             const walkFunctionF = (acc, curr) => {
                 const walkedSqlExpression = walkSqlExpressionInternal({...acc, sql: curr})
+
                 return {
                     ...walkedSqlExpression,
                     sql: [...acc.sql, walkedSqlExpression.sql]
@@ -83,6 +85,7 @@ function walkSqlExpressionInternal(walk) {
             const start = {...walk, sql: []}
 
             const walkReduced = walk.sql.args.reduce(walkFunctionF, start)
+
             return {
                 ...walkReduced,
                 sql: {
@@ -90,6 +93,7 @@ function walkSqlExpressionInternal(walk) {
                     args: walkReduced.sql
                 }
             }
+
     }
 }
 
@@ -134,6 +138,8 @@ export function walkSelectQueryInternal(walk) {
 
     const walkFields = walk.sql.fields.reduce(walkFieldsF, {...walk, sql: []})
 
+    // console.log(JSON.stringify(walkFields, undefined, 2))
+
     /** @type { (acc: WalkResult<FromItem[]>, curr: FromItem) => WalkResult<FromItem[]> } */
     const walkFromsF = (acc, curr) => {
 
@@ -155,18 +161,43 @@ export function walkSelectQueryInternal(walk) {
 
         /** @type {(acc: WalkResult<Join[]>, curr: Join) => WalkResult<Join[]>} */
         const walkJoinsF = (accJoins, currJoin) => {
-            const result = walkSqlExpressionInternal({
-                ...accJoins,
+
+            /** @type {() => [WalkResult<any>, (x: Join) => Join]} */
+            const walkSubquery = () => {
+                switch(currJoin.kind.type) {
+                    case "JoinTable": return [accJoins, (x) => x]
+                    case "JoinQuery": 
+                        const walkSubqueryResult = walkSelectQueryInternal({...accJoins, sql: currJoin.kind.query})
+                        return [walkSubqueryResult, (x) => ({
+                            ...x,
+                            kind: {
+                                type: "JoinQuery",
+                                query: walkSubqueryResult.sql,
+                            }
+                        })]
+                }
+            }
+
+            const [walkedSubquery, addWalkedSubquerySql] = walkSubquery()
+
+            const walkOnResult = walkSqlExpressionInternal({
+                ...walkedSubquery,
                 sql: currJoin.on,
             })
+
+            const join = addWalkedSubquerySql({
+                ...currJoin,
+                on: walkOnResult.sql
+            })
+
+            console.log("join")
+            console.log(JSON.stringify(join, undefined, 2))
+
             return {
-                ...result,
-                sql: [...accJoins.sql, {
-                    ...currJoin,
-                    on: result.sql
-                }]
+                ...walkOnResult,
+                sql: [...accJoins.sql, join]
             }
-        } 
+        }
 
         const walkResultJoins = curr.joins.reduce(walkJoinsF, {
             ...walkResultFrom,
@@ -194,6 +225,7 @@ export function walkSelectQueryInternal(walk) {
         ...walkWhere,
         sql: {
             ...walk.sql,
+            fields: walkFields.sql,
             froms: walkFroms.sql,
             where: walkWhere.sql
         }
@@ -208,7 +240,7 @@ export function walkSelectQueryInternal(walk) {
 export function walkSelectQuery(sq) {
     return walkSelectQueryInternal({
         params: [],
-        param: 0,
+        param: 1,
         sql: sq,
     })
 }

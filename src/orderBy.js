@@ -196,6 +196,8 @@ export class OrderBy extends Limit {
         const walk = walkSelectQuery(this.sql)
         const sqlString = print(walk.sql);
 
+        // console.log(JSON.stringify(walk.sql, undefined, 2))
+
         return {
             params: walk.params,
             query: sqlString,

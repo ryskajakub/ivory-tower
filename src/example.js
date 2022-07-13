@@ -119,6 +119,7 @@ const initDb = async () => {
 
     await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([1, "silver", "7P8-3108", new Date(2018, 1, 1), 1]))
     await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([2, "blue", "1A1-1234", new Date(2020, 1, 1), 1]))
+    await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([2, "blue", "1A2-2345", new Date(2021, 1, 1), 1]))
     await getResult(q, INSERT_INTO(cars, /** @type {const} */(["id", "color", "plate", "registered", "model_id"])).VALUES([3, "black", "9A9-2345", new Date(2022, 1, 1), 2]))
 
 }
@@ -131,19 +132,23 @@ const abc = null
 
 // const t = JSON_BUILD_OBJECT((["n", abc]))
 
-const modelsCarsQuery = 
-    SELECT(t => [t.model.id, MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
-        FROM(models)
-            .JOIN(cars).AS("c").ON(t => eq(t.c.model_id, t.model.id))
-            .GROUP_BY(t => [t.model.id])
-    )
-    
+const m = SELECT(t => [t.model.id, MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
+                FROM(models)
+                    .JOIN(cars).AS("c").ON(t => eq(t.c.model_id, t.model.id))
+                    .GROUP_BY(t => [t.model.id])
+            )
     
 
 const q1 = 
     SELECT((t) => [t.manufacturer.id, JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */ (["model_id", t.mcq.id, "name", t.mcq.name, "cars", t.mcq.cars1, "model_launched", t.mcq.ld]))).AS("models")],
     FROM(manufacturers)
-        .JOIN(modelsCarsQuery.AS("mcq")).ON(t => eq(t.manufacturer.id, t.mcq.id))
+        .JOIN(
+            SELECT(t => [t.model.id, MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
+                FROM(models)
+                    .JOIN(cars).AS("c").ON(t => eq(t.c.model_id, t.model.id))
+                    .GROUP_BY(t => [t.model.id])
+            ).AS("mcq")
+        ).ON(t => eq(t.manufacturer.id, t.mcq.id))
         .GROUP_BY(t => [t.manufacturer.id])
     )
 
@@ -152,6 +157,9 @@ const qap = q1.getQueryAndParams()
 console.log("Query:")
 console.log(qap.query)
 
-const result = await getResult(q, qap)
-console.log("Result:")
-console.log(JSON.stringify(result, undefined, 2))
+console.log(("Params:"))
+console.log(qap.params)
+
+// const result = await getResult(q, qap)
+// console.log("Result:")
+// console.log(JSON.stringify(result, undefined, 2))

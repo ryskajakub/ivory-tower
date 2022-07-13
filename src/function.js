@@ -8,12 +8,13 @@ import { Column } from "./column"
 export function JSON_BUILD_OBJECT(args) {
     const values = args.map((value, index) => {
         if (index % 2 === 0) {
-            /** @type {import("./Sql").Path} */
-            const path = {
-                type: "path",
-                value: `'${value}'`
+            /** @type {import("./Sql").SqlExpression} */
+            const lit = {
+                type: "literal",
+                value: value,
+                dbType: "text",
             }
-            return path
+            return lit
         } else {
             const column = /** @type { Column<any, any> } */ ( /** @type { unknown } */ (value))
             return column.value

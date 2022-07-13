@@ -58,7 +58,8 @@ export type Path = {
 
 export type Literal = {
     type: "literal",
-    value: any
+    value: any,
+    dbType: string | null,
 }
 
 export type Negation = {
