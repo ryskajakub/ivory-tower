@@ -1,8 +1,7 @@
-import { empty, fromItem, replaceExpressionsWithPaths } from "./sql";
+import { empty, replaceExpressionsWithPaths } from "./sql";
 import { JoinPhase, JoinPhaseAs } from "./joinPhase"
 import { replaceValueWithColumn } from "./sql";
 import { Where } from "./groupBy";
-import { Table } from "./table";
 import { SubQuery } from "./orderBy";
 import { Column, NamedColumn } from "./column";
 import { mapOneLevel } from "./helpers"
@@ -18,12 +17,49 @@ import { mapOneLevel } from "./helpers"
  * @returns { From<{}, import("./From").FromTableOrQuery<TableOrQuery>, false> }
  */
 export function FROM(table) {
-    /** @type { [any, import("./Sql").SelectQuery] } */
-    const [columns, sql] = table instanceof Table ?
-        [replaceValueWithColumn(table.def), { ...empty(), froms: [fromItem(table.name)] }] :
-        table instanceof SubQuery ?
-            [table.getColumns(), { ...empty(), froms: [fromItem(table.getSql())] }] : [{}, empty()]
-    return new From(sql, {}, columns)
+
+    if (table instanceof SubQuery) {
+        const columns = replaceExpressionsWithPaths(table.getColumns())
+        /** @type { import("./Sql").JoinQuery } */
+        const joinKind = {
+            type:"JoinQuery",
+            query: table.getSql()
+        }
+
+        /** @type { import("./Sql").FromItem } */
+        const fromItem = {
+            from: joinKind,
+            joins: []
+        }
+
+        const sql = { ...empty(), froms: [fromItem] }
+
+        // @ts-ignore
+        return new From(sql, {}, columns)
+    } else {
+        // @ts-ignore
+        const columns = replaceValueWithColumn(table.def)
+        /** @type { import("./Sql").JoinTable } */
+        const joinKind = {
+            // @ts-ignore
+            tableName: table.name,
+            type: "JoinTable",
+            as: null,
+        }
+
+        /** @type { import("./Sql").FromItem } */
+        const fromItem = {
+            from: joinKind,
+            joins: []
+        }
+
+        /** @type { import("./Sql").SelectQuery } */
+        const sql = { ...empty(), froms: [fromItem]}
+
+        // @ts-ignore
+        return new From(sql, {}, columns)
+    }
+
 }
 
 /**
@@ -106,14 +142,6 @@ export class From extends Where {
             return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, joinKind, currentJoin, null, "inner")
         }
 
-        /*
-        const currentJoin = table instanceof SubQuery ?
-            table.getColumns() :
-            // @ts-ignore
-            replaceValueWithColumn(table.def)
-        // @ts-ignore
-        return new JoinPhaseAs(this.sql, this.previousFroms, this.currentFrom, table.name, currentJoin, null, "inner")
-        */
     }
 
     /**

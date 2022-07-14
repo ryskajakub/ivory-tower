@@ -165,52 +165,42 @@ export function walkSelectQueryInternal(walk) {
     /** @type { (acc: WalkResult<FromItem[]>, curr: FromItem) => WalkResult<FromItem[]> } */
     const walkFromsF = (acc, curr) => {
 
-        /** @type { () => WalkResult<FromItem["from"]> } */
-        const walkFrom = () => {
-            if (typeof curr.from === "string") {
-                return {
-                    ...acc,
-                    sql: curr.from 
+        /** @type {(kind: import("./Sql").JoinKind, wr: WalkResult<any>) => WalkResult<import("./Sql").JoinKind>} */
+        const walkJoinKind = (kind, wr) => {
+            switch(kind.type) {
+                case "JoinTable": return {
+                    ...wr, 
+                    sql: kind
                 }
-            } else {
-                return walkSelectQueryInternal({
-                    ...acc,
-                    sql: curr.from
-                })
+                case "JoinQuery": 
+                    const walkSubqueryResult = walkSelectQueryInternal({...wr, sql: kind.query})
+                    return {
+                        ...walkSubqueryResult,
+                        sql: ({
+                            type: "JoinQuery",
+                            query: walkSubqueryResult.sql,
+                        })
+                    }
             }
         }
-        const walkResultFrom = walkFrom()
+
+        const walkResultFrom = walkJoinKind(curr.from, acc)
 
         /** @type {(acc: WalkResult<Join[]>, curr: Join) => WalkResult<Join[]>} */
         const walkJoinsF = (accJoins, currJoin) => {
 
-            /** @type {() => [WalkResult<any>, (x: Join) => Join]} */
-            const walkSubquery = () => {
-                switch(currJoin.kind.type) {
-                    case "JoinTable": return [accJoins, (x) => x]
-                    case "JoinQuery": 
-                        const walkSubqueryResult = walkSelectQueryInternal({...accJoins, sql: currJoin.kind.query})
-                        return [walkSubqueryResult, (x) => ({
-                            ...x,
-                            kind: {
-                                type: "JoinQuery",
-                                query: walkSubqueryResult.sql,
-                            }
-                        })]
-                }
-            }
-
-            const [walkedSubquery, addWalkedSubquerySql] = walkSubquery()
+            const walkedKind = walkJoinKind(currJoin.kind, accJoins)
 
             const walkOnResult = walkSqlExpressionInternal({
-                ...walkedSubquery,
+                ...walkedKind,
                 sql: currJoin.on,
             })
 
-            const join = addWalkedSubquerySql({
+            const join = {
                 ...currJoin,
-                on: walkOnResult.sql
-            })
+                on: walkOnResult.sql,
+                kind: walkedKind.sql,
+            }
 
             return {
                 ...walkOnResult,

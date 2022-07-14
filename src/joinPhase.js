@@ -58,8 +58,10 @@ export class JoinPhase {
             type: this.joinType,
         }
 
+
         /** @type {import("./Sql").FromItem } */
         const currentFrom = this.sql.froms[this.sql.froms.length - 1]
+
         /** @type {import("./Sql").FromItem} */
         const newFrom = { ...currentFrom, joins: [...currentFrom.joins, newJoin] }
         /** @type {import("./Sql").SelectQuery} */

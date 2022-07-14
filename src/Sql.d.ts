@@ -22,7 +22,7 @@ export type Join = Readonly<{
 }>
 
 export type FromItem = Readonly<{
-    from: string | SelectQuery,
+    from: JoinKind,
     joins: readonly Join[],
 }>
 

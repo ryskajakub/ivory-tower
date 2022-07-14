@@ -138,9 +138,7 @@ const q0 =
 
 const q1 = SELECT(
     t => [t.mcq.manufacturer_id, JSON_AGG(JSON_BUILD_OBJECT( /** @type {const} */ (['cars', t.mcq.cars1, 'name', t.mcq.name]))).AS("models")] , 
-    FROM(models)
-        .JOIN(q0.AS("mcq"))
-        .ON(t => eq(t.model.id, t.mcq.id) )
+    FROM(q0.AS("mcq"))
         .GROUP_BY(t => [t.mcq.manufacturer_id])
     )
 

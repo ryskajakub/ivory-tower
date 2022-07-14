@@ -18,17 +18,6 @@ export function empty() {
 }
 
 /**
- * @param {string | import("./Sql").SelectQuery} tableName 
- * @returns {import("./Sql").FromItem}
- */
-export function fromItem(tableName) {
-    return {
-        from: tableName,
-        joins: [],
-    }
-}
-
-/**
  * @param { { [key: string]: Column<any, any> } } obj 
  * @param {string} key
  * @returns { { [key: string]: import("./column").Column<any, any> } }
@@ -144,15 +133,7 @@ export function print(sq, indentParam) {
         .reduce((prev, current) => `${prev}, ${current}`)
     const select = `SELECT ${fields}`
     const fromItems = sq.froms.map(fi => {
-        const f1 = typeof fi.from === 'string' ?
-            `${indentStr}\t${fi.from}` : `${indentStr}\t(\n${print(fi.from, indent + 2)}${indentStr}\t) AS ${fi.from.as}`
-        /** @type {(joinType: import("./From").JoinType) => string} */
-        const printJoinType = (joinType) => {
-            switch (joinType) {
-                case "left": return "LEFT JOIN"
-                case "inner": return "JOIN"
-            }
-        }
+
 
         /** @type {(joinKind: import("./Sql").JoinKind) => string } */
         const mkJoinKind = (joinKind) => {
@@ -164,6 +145,17 @@ export function print(sq, indentParam) {
 
             }
         } 
+
+        const f1 = mkJoinKind(fi.from)
+        // const f1 = typeof fi.from === 'string' ?
+        //     `${indentStr}\t${fi.from}` : `${indentStr}\t(\n${print(fi.from, indent + 2)}${indentStr}\t) AS ${fi.from.as}`
+        /** @type {(joinType: import("./From").JoinType) => string} */
+        const printJoinType = (joinType) => {
+            switch (joinType) {
+                case "left": return "LEFT JOIN"
+                case "inner": return "JOIN"
+            }
+        }
 
         const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + mkJoinKind(join.kind) + (` ON ${printCondition(join.on)}`)).reduce((prev, current) => `${prev}${current}`, "")
         return `${f1}${joins}`
