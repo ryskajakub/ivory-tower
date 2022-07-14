@@ -5,8 +5,8 @@ import { walkSelectQuery } from "./walk";
 
 export class FinalOrderingElement {
     /**
+     * @param {string} field
      * @param {import("./Column").ColumnDirection} direction
-     * @param {import("./column").Column<any, any>} field 
      */
     constructor(field, direction) {
         /** @readonly */
@@ -18,7 +18,7 @@ export class FinalOrderingElement {
 
 export class OrderingElement extends FinalOrderingElement {
     /**
-     * @param {import("./column").Column<any, any>} field 
+     * @param {string} field
      */
     constructor(field) {
         super(field, "default")
@@ -212,14 +212,18 @@ export class OrderBy extends Limit {
     ORDER_BY = (ab) => {
 
         /** @type { {[key: string]: OrderingElement} } */
-        const orderingElementsInput = toObj(Object.entries(this.columns).map(([colKey, colValue]) => [colKey, 
-            new OrderingElement(colValue)
-        ]))
+        const orderingElementsInput = toObj(Object.keys(this.columns)
+            .map((colKey) => {
+                return [colKey, new OrderingElement(colKey) ]
+            }
+        ))
 
         // @ts-ignore
         const orderingElements = ab(orderingElementsInput)
+
         /** @type { import("./Sql").Order[] } */
-        const order = orderingElements.map(oe => ({ field: `${oe.field.value}`, direction: oe.direction }))
+        // @ts-ignore
+        const order = orderingElements.map(oe => ({ field: oe.field, direction: oe.direction }))
 
         const newSql = {
             ...this.sql,

@@ -146,6 +146,7 @@ const q2 =
     FROM(manufacturers)
         .JOIN(q1.AS("mcq0")).ON(t => t.manufacturer.id.op("=", t.mcq0.manufacturer_id))
     )
+    .ORDER_BY(t => [t.id])
 
 const qap = q2.getQueryAndParams()
 
