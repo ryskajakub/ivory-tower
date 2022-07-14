@@ -1,7 +1,5 @@
 import { makeExpression } from "./expression";
 
-export const OPS = /** @type {const} */ (["=", ">="]);
-
 /**
  * @template DbType
  * @template {import("./Column").ColumnState} State
@@ -32,7 +30,7 @@ export class Column {
 
   /**
    * @template T
-   * @param { import("./Helpers").TupleToUnion<typeof OPS> } operator
+   * @param { import("./Sql").CharOperator } operator
    * @param { T } operand
    * @returns { import("./Expression").Op<DbType, State, T> }
    */
@@ -44,22 +42,12 @@ export class Column {
       value: operand,
     };
 
-    const mkOp = () => {
-      switch (operator) {
-        case "=":
-          return "eq";
-        case ">=":
-          return "gte";
-      }
-    };
-
     /** @type {import("./Sql").SqlExpression} */
     const sqlExpression = {
       type: "binary",
       arg1: this.value,
       arg2: literal,
-      // @ts-ignore
-      operator: mkOp(),
+      operator,
     };
 
     // @ts-ignore
@@ -75,7 +63,7 @@ export class Column {
     /** @type { import("./Sql").BinaryOperation } */
     const sql = {
       type: "binary",
-      operator: "and",
+      operator: "AND",
       arg1: this.value,
       arg2: makeExpression(expr2),
     }

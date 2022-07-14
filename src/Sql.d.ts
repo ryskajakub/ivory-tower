@@ -1,6 +1,12 @@
 import { ColumnDirection, SingleState } from "./Column"
 import { Column } from "./column"
 import { JoinType } from "./From"
+import { TupleToUnion } from "./Helpers"
+import { CHAR_OPERATORS } from "./sql"
+
+export type CharOperator = TupleToUnion<typeof CHAR_OPERATORS>
+export type WordOperator = "AND" | "OR"
+export type Operator = CharOperator | WordOperator
 
 export type JoinTable = {
     type: "JoinTable",
@@ -48,8 +54,6 @@ export type SelectQuery = Readonly<{
 }>
 
 export type FunctionName = string
-
-export type Operator = "eq" | "gt" | "lt" | "gte" | "lte" | "and" | "or"
 
 export type Path = {
     type: "path",

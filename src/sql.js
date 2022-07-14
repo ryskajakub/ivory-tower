@@ -1,6 +1,8 @@
 import { toObj } from "./helpers"
 import { Column } from "./column"
 
+export const CHAR_OPERATORS = /** @type {const} */ (["=", ">=", "<>", "<=", ">", "<"]);
+
 /**
  * @returns {import("./Sql").SelectQuery}
  */
@@ -94,15 +96,7 @@ export function printCondition(condition) {
 
     /** @type { (op: import("./Sql").Operator) => string } */
     const printOperator = (op) => {
-        switch (op) {
-            case "and": return "AND"
-            case "or": return "OK"
-            case "gt": return ">"
-            case "gte": return ">="
-            case "eq": return "="
-            case "lt": return "<"
-            case "lte": return "<="
-        }
+        return op
     }
 
     /** @type { (arg: import("./Sql").SqlExpression ) => string } */
