@@ -22,7 +22,7 @@ export function makeExpression (expression) {
  * @template Arg2
  * @param {Arg1} arg1
  * @param {Arg2} arg2
- * @param { import("./Sql").Operator } op
+ * @param { import("./Sql").CharOperator } op
  * @returns {import("./Expression").BoolOp<Arg1, Arg2>}
  */
 function binOp(arg1, arg2, op) {
@@ -37,26 +37,4 @@ function binOp(arg1, arg2, op) {
 
   // @ts-ignore
   return new Column((x) => x, null, sql)
-}
-
-/**
- * @template Arg1
- * @template Arg2
- * @param {Arg1} arg1
- * @param {Arg2} arg2
- * @returns {import("./Expression").BoolOp<Arg1, Arg2>}
- */
-export function gt(arg1, arg2) {
-  return binOp(arg1, arg2, "gt")
-}
-
-/**
- * @template Arg1
- * @template Arg2
- * @param {Arg1} arg1
- * @param {Arg2} arg2
- * @returns {import("./Expression").BoolOp<Arg1, Arg2>}
- */
-export function eq(arg1, arg2) {
-  return binOp(arg1, arg2, "eq")
 }

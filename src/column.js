@@ -35,18 +35,28 @@ export class Column {
    * @returns { import("./Expression").Op<DbType, State, T> }
    */
   op = (operator, operand) => {
-    /** @type { import ("./Sql").SqlExpression } */
-    const literal = {
-      type: "literal",
-      dbType: null,
-      value: operand,
-    };
+
+    /** @type {() => import("./Sql").SqlExpression} */
+    const mkExpression = () => {
+      if (operand instanceof Column) {
+        return operand.value
+      } else {
+        /** @type { import ("./Sql").SqlExpression } */
+        const literal = {
+          type: "literal",
+          dbType: null,
+          value: operand,
+        };
+        return literal
+      }
+    }
+
 
     /** @type {import("./Sql").SqlExpression} */
     const sqlExpression = {
       type: "binary",
       arg1: this.value,
-      arg2: literal,
+      arg2: mkExpression(),
       operator,
     };
 

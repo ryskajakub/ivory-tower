@@ -6,7 +6,6 @@ import { print } from "./sql"
 import { SELECT } from "./select"
 import { JSON_AGG, MAX, MIN } from "./aggregate"
 import { getClient, getResult, runQuery, runRaw } from "./run"
-import { eq, gt } from "./expression"
 import { insert, INSERT_INTO } from "./insert"
 import { create } from "./schema"
 import { JSON_BUILD_OBJECT } from "./function"
@@ -131,7 +130,7 @@ await initDb()
 const q0 =
     SELECT(t => [t.model.id, MAX(t.model.manufacturer_id).AS("manufacturer_id"), MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
         FROM(models)
-            .JOIN(cars).AS("c").ON(t => eq(t.c.model_id, t.model.id))
+            .JOIN(cars).AS("c").ON(t => (t.c.model_id).op("=", t.model.id))
             .WHERE(t => SUBSTRING(/** @type {const} */ ([t.c.plate, "FROM", 2, "FOR", 1])).op("=", "A"))
             .GROUP_BY(t => [t.model.id])
     )
@@ -145,7 +144,7 @@ const q1 = SELECT(
 const q2 = 
     SELECT((t) => [t.manufacturer.id, t.manufacturer.name, t.mcq0.models],
     FROM(manufacturers)
-        .JOIN(q1.AS("mcq0")).ON(t => eq(t.manufacturer.id, t.mcq0.manufacturer_id))
+        .JOIN(q1.AS("mcq0")).ON(t => t.manufacturer.id.op("=", t.mcq0.manufacturer_id))
     )
 
 const qap = q2.getQueryAndParams()
