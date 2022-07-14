@@ -46,3 +46,8 @@ yarn
 docker-compose up
 yarn run example
 ```
+
+## running tests
+```
+yarn test
+```
