@@ -1,4 +1,6 @@
 import { makeExpression } from "./expression";
+import { Query } from "./orderBy";
+import { anyFormFunction } from "./sql";
 
 /**
  * @template DbType
@@ -35,6 +37,16 @@ export class Column {
    * @returns { import("./Expression").Op<DbType, State, T> }
    */
   op = (operator, operand) => {
+    return this.opInternal(operator, operand)
+  }
+
+  /**
+   * @template T
+   * @param { import("./Sql").Operator } operator
+   * @param { T } operand
+   * @returns { import("./Expression").Op<DbType, State, T> }
+   */
+  opInternal = (operator, operand) => {
 
     /** @type {() => import("./Sql").SqlExpression} */
     const mkExpression = () => {
@@ -51,7 +63,6 @@ export class Column {
       }
     }
 
-
     /** @type {import("./Sql").SqlExpression} */
     const sqlExpression = {
       type: "binary",
@@ -67,18 +78,68 @@ export class Column {
   /**
    * @template { import("./Column").SingleState } State2
    * @param { Column<"boolean", State2> } expr2
-   * @returns {import("./Expression").BoolOpFlat<DbType, State, "boolean", State2>}
+   * @returns { import("./Expression").Op<DbType, State, Column<"boolean", State2>> }
    */
   AND = (expr2) => {
-    /** @type { import("./Sql").BinaryOperation } */
-    const sql = {
-      type: "binary",
-      operator: "AND",
-      arg1: this.value,
-      arg2: makeExpression(expr2),
+    return this.opInternal("AND", expr2)
+  }
+
+  /**
+   * @template T
+   * @param {T} arrayOrQuery 
+   * @returns {import("./Column").InResult<T, DbType, State>}
+   */
+  IN = (arrayOrQuery) => {
+
+    if (arrayOrQuery instanceof Query) {
+      
+      const query = /** @type { Query<any> } */ (arrayOrQuery)
+
+      /** @type { import("./Sql").SqlExpression } */
+      const querySqlExpression = {
+        type: "queryExpression",
+        query: query.getSql()
+      }
+
+      /** @type { import("./Sql").SqlExpression } */
+      const sqlExpression = {
+        type: "binary",
+        operator: "IN",
+        arg1: this.value,
+        arg2: querySqlExpression
+      }
+
+      /** @type { Column<import("./Column").Boolean, State> } */
+      const result = new Column((x) => x, this.state, sqlExpression)
+
+      // @ts-ignore
+      return result
+
+    } else {
+      const array = /** @type {any[]} */ (Array.isArray(arrayOrQuery) ? arrayOrQuery : [arrayOrQuery])
+
+      /** @type { import("./Sql").SqlExpression[] } */
+      const lits = array.map(a => ({
+        type: "literal",
+        value: a,
+        dbType: null,
+      }))
+
+      /** @type { import("./Sql").SqlExpression } */
+      const sqlExpression = anyFormFunction(/** @type {const} */ ([this.value, ...lits]))(([col, ...lits], printExpression) => {
+
+        const printedArgs = lits.map(e => printExpression(e)).join(", ")
+
+        return `${printExpression(col)} IN(${printedArgs})`
+      })
+
+      /** @type { Column<import("./Column").Boolean, State> } */
+      const result = new Column((x) => x, this.state, sqlExpression)
+
+      // @ts-ignore
+      return result
+
     }
-    // @ts-ignore
-    return new Expression(null, sql)
   }
 }
 

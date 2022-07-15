@@ -5,6 +5,7 @@ import { mapOneLevel } from "./helpers"
 /**
  * @template T
  * @template U
+ * @implements { Selectable<import("./From").MakeSelectable<T & U>> }
  */
 export class GroupBy {
     /**
@@ -19,6 +20,33 @@ export class GroupBy {
         this.previousFroms = previousFroms
         /** @readonly @protected */
         this.currentFrom = currentFrom
+    }
+
+    /**
+     * @returns { import("./From").MakeSelectable<T & U> }
+     */
+    getSelectable = () => {
+
+        /** @type { (name: string, c: Column<any, any>) => NamedColumn<any, any, any> } */
+        const toNamedColumn = (name, c) => {
+            return c.AS(name)
+        }
+
+        const unionOfColumns = {
+            ...this.currentFrom,
+            ...this.previousFroms,
+        }
+
+        const union = mapOneLevel(unionOfColumns, (_key, obj) => 
+            mapOneLevel(obj, (name, c) => toNamedColumn(name, c))
+        )
+
+        // @ts-ignore
+        return union
+    }
+
+    getSql = () => {
+        return this.sql
     }
 
     /**
@@ -63,6 +91,11 @@ export class GroupBy {
     }
 
 }
+
+/**
+ * @template T
+ * @typedef { import("./Select").Selectable<T> } Selectable
+ */
 
 /**
  * @template T

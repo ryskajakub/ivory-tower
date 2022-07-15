@@ -64,44 +64,11 @@ export function FROM(table) {
 
 /**
  * @template T
- * @typedef { import("./Select").Selectable<T> } Selectable
- */
-
-/**
- * @template T
  * @template U
  * @template {boolean} Lateral
  * @extends Where<T, U>
- * @implements { Selectable<import("./From").MakeSelectable<T & U>> }
  */
 export class From extends Where {
-
-    /**
-     * @returns { import("./From").MakeSelectable<T & U> }
-     */
-    getSelectable = () => {
-
-        /** @type { (name: string, c: Column<any, any>) => NamedColumn<any, any, any> } */
-        const toNamedColumn = (name, c) => {
-            return c.AS(name)
-        }
-
-        const unionOfColumns = {
-            ...this.currentFrom,
-            ...this.previousFroms,
-        }
-
-        const union = mapOneLevel(unionOfColumns, (_key, obj) => 
-            mapOneLevel(obj, (name, c) => toNamedColumn(name, c))
-        )
-
-        // @ts-ignore
-        return union
-    }
-
-    getSql = () => {
-        return this.sql
-    }
 
     /**
      * @param {import("./Sql").SelectQuery} sql

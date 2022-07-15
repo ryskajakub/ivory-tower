@@ -1,4 +1,4 @@
-import { Aggregated, Boolean, ColumnState, SingleState, TsType } from "./Column";
+import { Aggregated, Boolean, ColumnState, DbType, SingleState, TsType } from "./Column";
 import { Column } from "./column";
 import { IfAnyIntersection } from "./Helpers";
 
@@ -24,7 +24,10 @@ export type BoolOp<Arg1, Arg2> =
 
 export type BoolOpFlat<Arg1Type, Arg1State extends ColumnState, Arg2Type, Arg2State extends ColumnState> = BoolOp<Column<Arg1Type, Arg1State>, Column<Arg2Type, Arg2State>>
 
+export type TsDbTypesComparable<TsType1, DbType1> =
+    TsType1 extends (TsType<DbType1> | null) ? true : false
+
 export type Op<DbType, State extends ColumnState, Operand> =
-    Operand extends (TsType<DbType> | null) ? Column<"boolean", State> : Operand extends Column<infer DbType, infer State2> ? 
+    TsDbTypesComparable<Operand, DbType> extends true ? Column<"boolean", State> : Operand extends Column<infer DbType, infer State2> ? 
         Column<"boolean", State>
     : never

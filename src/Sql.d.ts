@@ -2,10 +2,10 @@ import { ColumnDirection, SingleState } from "./Column"
 import { Column } from "./column"
 import { JoinType } from "./From"
 import { TupleToUnion } from "./Helpers"
-import { CHAR_OPERATORS } from "./sql"
+import { CharOperators } from "./sql"
 
-export type CharOperator = TupleToUnion<typeof CHAR_OPERATORS>
-export type WordOperator = "AND" | "OR"
+export type CharOperator = TupleToUnion<typeof CharOperators>
+export type WordOperator = "AND" | "OR" | "IN"
 export type Operator = CharOperator | WordOperator
 
 export type JoinTable = {
@@ -83,7 +83,12 @@ export type AnyFormFunction = {
     args: SqlExpression[],
 }
 
-export type SqlExpression = Path | Literal | BinaryOperation | Negation | SqlFunction | AnyFormFunction
+export type QueryExpression = {
+    type: "queryExpression",
+    query: SelectQuery,
+}
+
+export type SqlExpression = Path | Literal | BinaryOperation | Negation | SqlFunction | AnyFormFunction | QueryExpression
 
 export type BinaryOperation = {
     type: "binary",

@@ -2,7 +2,7 @@
 # writes
 # select from subquery
 # implementation
-- transformers
+# transformers
 # json support
 # aggregation functions
 # functions
@@ -11,4 +11,4 @@
 # psql types
 - dependency on lateral queries
 # run query
-- functions
+# functions

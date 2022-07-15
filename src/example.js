@@ -127,11 +127,13 @@ const initDb = async () => {
 
 await initDb()
 
+const niceColors = SELECT(t => [t.car.color], FROM(cars).WHERE(t => SUBSTRING(/** @type {const } */([t.car.color, "FROM", 1, "FOR", 1])).op("=", 'b')))
+
 const q0 =
-    SELECT(t => [t.model.id, MAX(t.model.manufacturer_id).AS("manufacturer_id"), MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate]))).AS("cars1")],
+    SELECT(t => [t.model.id, MAX(t.model.manufacturer_id).AS("manufacturer_id"), MAX(t.model.name).AS("name"), MAX(t.model.launch_date).AS("ld"), JSON_AGG(JSON_BUILD_OBJECT(/** @type {const} */(['reg', t.c.registered, 'plate', t.c.plate, 'colour', t.c.color]))).AS("cars1")],
         FROM(models)
             .JOIN(cars).AS("c").ON(t => (t.c.model_id).op("=", t.model.id))
-            .WHERE(t => SUBSTRING(/** @type {const} */ ([t.c.plate, "FROM", 2, "FOR", 1])).op("=", "A"))
+            .WHERE(t => SUBSTRING(/** @type {const} */ ([t.c.plate, "FROM", 2, "FOR", 1])).op("=", "A").AND(t.c.color.IN(niceColors)))
             .GROUP_BY(t => [t.model.id])
     )
 

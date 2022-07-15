@@ -8,6 +8,11 @@ export type TypeEquals<A, B> = A extends B ? (
     B extends A ? true : false
 ) : false
 
+export type IsOneElementObject<T> = {} extends T ? false :
+    {} extends {
+        [K in keyof T as keyof T extends K ? K : never]: true
+    } ? false : true
+
 export type TypeMap<Map extends [any, any][], T> = 
     Map extends [infer First, ...infer Rest] ? (
         First extends [infer A, infer B] ? (

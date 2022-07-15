@@ -117,7 +117,19 @@ function walkSqlExpressionInternal(walk) {
                     args: walkAnyFormFReduced.sql
                 }
             }
-
+        case "queryExpression":
+            const walkQueryParam = {
+                ...walk,
+                sql: walk.sql.query
+            }
+            const walkedQuery = walkSelectQueryInternal(walkQueryParam)
+            return {
+                ...walkedQuery,
+                sql: {
+                    type: "queryExpression",
+                    query: walkedQuery.sql
+                }
+            }
     }
 }
 

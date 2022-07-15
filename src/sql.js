@@ -1,7 +1,7 @@
 import { toObj } from "./helpers"
 import { Column } from "./column"
 
-export const CHAR_OPERATORS = /** @type {const} */ (["=", ">=", "<>", "<=", ">", "<"]);
+export const CharOperators = /** @type {const} */ (["=", ">=", "<>", "<=", ">", "<"]);
 
 /**
  * @returns {import("./Sql").SelectQuery}
@@ -92,7 +92,7 @@ export function replaceExpressionsWithPaths(obj) {
 /**
  * @param {import("./Sql").SqlExpression } condition 
  */
-export function printCondition(condition) {
+export function printSqlExpression(condition) {
 
     /** @type { (op: import("./Sql").Operator) => string } */
     const printOperator = (op) => {
@@ -104,12 +104,13 @@ export function printCondition(condition) {
         switch (arg.type) {
             case "literal": return `${arg.value}`
             case "path": return arg.value
-            case "binary": return `(${value(arg.arg1)} ${printOperator(arg.operator)} ${value(arg.arg2)})`
+            case "binary": return `${value(arg.arg1)} ${printOperator(arg.operator)} ${value(arg.arg2)}`
             case "negation": return `NOT ${value(arg)}`
             case "function":
                 const args = arg.args.map(a => value(a)).join(", ")
                 return `${arg.name}(${args})`
             case "anyFormFunction": return arg.print(arg.args, value)
+            case "queryExpression": return `(${print(arg.query)})`
         }
     }
     return value(condition)
@@ -123,7 +124,7 @@ export function printCondition(condition) {
 export function print(sq, indentParam) {
     const indent = indentParam ? indentParam : 0
     const indentStr = [...Array(indent).keys()].map(_ => "\t").reduce((prev, current) => `${prev}${current}`, "")
-    const fields = sq.fields.map(field => printCondition(field.expression) + (field.as === null ? "" : ` AS ${field.as}`))
+    const fields = sq.fields.map(field => printSqlExpression(field.expression) + (field.as === null ? "" : ` AS ${field.as}`))
         .reduce((prev, current) => `${prev}, ${current}`)
     const select = `SELECT ${fields}`
     const fromItems = sq.froms.map(fi => {
@@ -151,7 +152,7 @@ export function print(sq, indentParam) {
             }
         }
 
-        const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + mkJoinKind(join.kind) + (` ON ${printCondition(join.on)}`)).reduce((prev, current) => `${prev}${current}`, "")
+        const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + mkJoinKind(join.kind) + (` ON ${printSqlExpression(join.on)}`)).reduce((prev, current) => `${prev}${current}`, "")
         return `${f1}${joins}`
     }).reduce((prev, current) => `${prev},\n${current}`)
 
@@ -165,8 +166,8 @@ export function print(sq, indentParam) {
     }
 
     const from = `FROM\n${fromItems}`
-    const where = sq.where === null ? null : (`WHERE ${printCondition(sq.where)}`)
-    const groupBy = sq.groupBy.length === 0 ? null : `GROUP BY ${sq.groupBy.map(item => printCondition(item)).reduce((prev, current) => `${prev}, ${current}`)}`
+    const where = sq.where === null ? null : (`WHERE ${printSqlExpression(sq.where)}`)
+    const groupBy = sq.groupBy.length === 0 ? null : `GROUP BY ${sq.groupBy.map(item => printSqlExpression(item)).reduce((prev, current) => `${prev}, ${current}`)}`
     const order = sq.order.length === 0 ? null : `ORDER BY ${sq.order.map((ob) => ob.field + printDirection(ob.direction))}`
     const limit = sq.limit === null ? null : `LIMIT ${sq.limit}`
     const offset = sq.offset === null ? null : `OFFSET ${sq.offset}`
@@ -189,7 +190,7 @@ export function path(str) {
 }
 
 /**
- * @template { any | (readonly any[]) } T
+ * @template {any | Array<any>} T
  * @param {T} args
  * @returns { ( print: ((args: T, printSqlExpression: ((e: import("./Sql").SqlExpression) => string)) => string) ) => import("./Sql").AnyFormFunction }
  */
@@ -199,6 +200,7 @@ export function anyFormFunction(args) {
         /** @type { (x: import("./walk").SqlExpression[]) => string } */
         // @ts-ignore
         const printTakingArray = Array.isArray(args) ? print : (x) => print(x[0])
+        const argsArray = Array.isArray(args) ? args : [args]
 
         /** @type { import("./Sql").AnyFormFunction } */
         const result = {
@@ -206,7 +208,7 @@ export function anyFormFunction(args) {
             // @ts-ignore
             print: printTakingArray,
             // @ts-ignore
-            args
+            args: argsArray
         }
         return result
     }

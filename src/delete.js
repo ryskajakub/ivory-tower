@@ -1,5 +1,5 @@
 import { Column } from "./column";
-import { printCondition, replaceValueWithColumn } from "./sql";
+import { printSqlExpression, replaceValueWithColumn } from "./sql";
 import { Table } from "./table";
 import { walkSqlExpression } from "./walk";
 
@@ -28,7 +28,7 @@ export class Delete {
     const condition = mkCondition(columns)
 
     const walkedCondition = walkSqlExpression(condition.value)
-    const printedCondition = printCondition(walkedCondition.sql)
+    const printedCondition = printSqlExpression(walkedCondition.sql)
 
     return {
         query: `DELETE FROM ${this.table.name} WHERE ${printedCondition}`,
