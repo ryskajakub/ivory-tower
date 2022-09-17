@@ -15,6 +15,7 @@
   },
   "type": "module",
   "dependencies": {
-    "express": "^4.18.1"
+    "express": "^4.18.1",
+    "ts-arithmetic": "^0.1.1"
   }
 }

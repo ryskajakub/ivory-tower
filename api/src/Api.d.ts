@@ -1,3 +1,4 @@
+import { Gt } from "ts-arithmetic"
 import { Get, Post } from "./api"
 
 export type LiteralPath<A extends string> = {
@@ -34,3 +35,16 @@ export type AddPath<ExtPaths extends Path[], ExtPath extends string> =
 
 export type DispatchMethod<ExtMethod extends Method, ExtPaths extends Path[]> =
     ExtMethod extends "GET" ? Get<ExtPaths> : Post<ExtPaths>
+
+// type T = Gt<1, 1>
+
+type Bubble<T extends number[]> = 
+    T extends [infer Head extends number, infer Second extends number, ...infer Rest extends number[]] ? 
+        (Gt<Head, Second> extends 1 ? [Second, ...Bubble<[Head, ...Rest]>] : [Head, ...Bubble<[Second, ...Rest]>]) : T
+
+type TTT = Sort<[9, 1, 1, 8, 3, 5]>
+
+type Sort<T extends number[]> = 
+    Bubble<T> extends [...infer Init extends number[], infer Last extends number] ? [...Sort<Init>, Last] : T
+
+
