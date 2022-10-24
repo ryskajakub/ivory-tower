@@ -23,6 +23,8 @@ export type BoolType = {
 }
 */
 
+export type UnaryType = StringType 
+
 type Choice = {
     type: string,
     value: BodyType

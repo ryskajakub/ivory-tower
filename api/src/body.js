@@ -10,6 +10,31 @@ export function stringType() {
 }
 
 /**
+ * @template {number} ExtNumber
+ * @template {string} Name
+ * @template {import("./Body").UnaryType} ExtUnaryType
+ * @param {ExtNumber} order 
+ * @param {Name} name 
+ * @param {ExtUnaryType} unaryType 
+ */
+export function paramPathType(order, name, unaryType) {
+
+}
+
+/**
+ * @template {number} ExtNumber
+ * @param {ExtNumber} order 
+ * @param {string} name 
+ */
+export function unnamedPathType(order, name) {
+
+}
+
+export function headerType(name, value) {
+
+}
+
+/**
  * @template { Record<string, import("./Body").BodyType> } ExtType
  * @param { ExtType } fields
  * @returns { import("./Body").ObjectType<ExtType> } 

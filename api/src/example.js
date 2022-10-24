@@ -1,4 +1,4 @@
-import { endpoint, Endpoints, mkEndpoints } from "./api";
+import { endpoint, Endpoints, mkEndpoint, mkEndpoints } from "./api";
 import { mkSimpleChoiceType, objectType, stringType } from "./body";
 
 const body = objectType({
@@ -18,3 +18,13 @@ const e = mkEndpoints().addEndpoint(x).addEndpoint(y)
 
 /** @typedef { import("./Body").MkBody<typeof body> } A */
 
+// const b = {
+//     field1: stringType(),
+//     field2: mkSimpleChoiceType(),
+//     fieldx: pathType(),
+// }
+
+const e = mkEndpoint("abc", "GET", {
+    field1: stringType(),
+    f2: pathType()
+})

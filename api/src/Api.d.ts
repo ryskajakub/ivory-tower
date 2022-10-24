@@ -1,5 +1,5 @@
 import { Gt } from "ts-arithmetic"
-import { Get, Post } from "./api"
+import { Endpoint1, Get, Post } from "./api"
 
 export type LiteralPath<A extends string> = {
     type: "literal",
@@ -47,4 +47,8 @@ type TTT = Sort<[9, 1, 1, 8, 3, 5]>
 type Sort<T extends number[]> = 
     Bubble<T> extends [...infer Init extends number[], infer Last extends number] ? [...Sort<Init>, Last] : T
 
+
+type AnyEndpoint = Endpoint1<any, any, any>
+
+export type MkEndpoint<Name, Method, Data> = 
 

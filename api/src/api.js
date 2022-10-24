@@ -6,6 +6,39 @@ export function endpoint() {
 }
 
 /**
+ * @template { string } Name
+ * @template { import("./Api").Method | null } ExtMethod
+ * @template Data
+ */
+export class Endpoint1 {
+
+    /**
+     * @param {Name} name
+     * @param {ExtMethod} method 
+     * @param {Data} data 
+     */
+    constructor(name, method, data) {
+        this.name = name
+        this.method = method
+        this.data = data
+    }
+
+}
+
+// /**
+//  * @template { string } Path
+//  * @template A
+//  * @template { import("./Api").AnyEndpoint } ExtEndpoint
+//  * @param {Path} path 
+//  * @param {A} obj
+//  * @param { ExtEndpoint } endpoint
+//  * @returns { AddToEndpoint<ExtEndpoint, Path, A> }
+//  */
+// export function add(path, obj, endpoint) {
+
+// }
+
+/**
  * @template { import("./Api").Path[] } ExtPaths
  */
 class PathBuilder {
@@ -168,4 +201,17 @@ export class Endpoints {
  */
 export function mkEndpoints() {
     return new Endpoints([])
+}
+
+/**
+ * @template { string } Name
+ * @template { import("./Api").Method } ExtMethod
+ * @template { object } Data
+ * @param { Name } name 
+ * @param { ExtMethod } method
+ * @param { Data } data
+ * @return { import("./Api").MkEndpoint<Name, ExtMethod, Data> }
+ */
+export function mkEndpoint(name, method, data) {
+    return new Endpoint1(name, method, data)
 }
