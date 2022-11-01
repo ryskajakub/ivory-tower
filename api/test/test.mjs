@@ -1,6 +1,7 @@
 import { test, expect } from "@jest/globals"
-import axios from "axios"
 import { client, endpoint, serve } from "../src/description.mjs"
+import express from 'express'
+import axios from "axios"
 
 test('abc', async () => {
 
@@ -18,18 +19,22 @@ test('abc', async () => {
         }
     }, { type: "object", values: { x: "number" } })
 
-    const server = await serve(api, (params, input) => {
-        return {
-            200: [params.def * input.x]
-        }
+    const server = await serve(registerEndpoint => {
+        registerEndpoint(api, (params, input) => {
+            return {
+                200: [params.def * input.x]
+            }
+        })
     })
 
-    const base = `http://localhost:3000`
+    // const base = `http://localhost:3000`
 
     /** @type { any } */
     try {
         // const result = await axios.post(`${base}/abc/123`, {x: 2})
         const result = await client(api)({ def: 100 }, { x: 8 })
+
+        expect(result.code).toBe(200)
 
         switch (result.code) {
             case 200:
@@ -45,5 +50,33 @@ test('abc', async () => {
     } finally {
         server.close()
     }
+
+})
+
+test('def', async () => {
+    const app = express()
+
+    app.get('/xxx', (req, res) => {
+
+        console.log(req.query)
+        console.log(req.originalUrl)
+
+        res.send()
+    })
+
+    app.listen(3000, async () => {
+        axios.get("/xxx", {
+            baseURL: "http://localhost:3000",
+            params: {
+                abc: ["def=", "ttt/"],
+                xxx: {
+                    ttt: {
+                        wtf: 8,
+                        lol: 222
+                    }
+                }
+            }
+        })
+    })
 
 })

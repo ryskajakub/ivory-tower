@@ -23,39 +23,20 @@ export function endpoint(path, method, outputs, input) {
 }
 
 /**
- * @template { import('./types').InnerPayloadElement | import('./types').RootElement} Payload
+ * @template { import('./types').InnerPayloadElement | import('./types').RootElement } Payload
  * @param { Payload } payloadSpec 
+ * @param { import('./types').SourceType } sourceType
  * @returns {( (payload: any) => import('./types').ValidationResult<import('./types').RootPayloadType<Payload>> )}
  */
-export function getValidator(payloadSpec) {
+export function getValidator(payloadSpec, sourceType) {
     // @ts-ignore
     return (payload) => {
 
         if (typeof payloadSpec === "string") {
-            switch (payloadSpec) {
-                case "number":
-                    const asNumber = Number(payload)
-                    if (Number.isNaN(asNumber)) {
-                        return {
-                            type: "failure",
-                        }
-                    } else {
-                        return {
-                            type: "success",
-                            result: asNumber
-                        }
-                    }
-                case "string":
-                    if (typeof payload === 'string') {
-                        return {
-                            type: "success",
-                            result: payload
-                        }
-                    } else {
-                        return {
-                            type: "failure",
-                        }
-                    }
+            const leafTransformer = leafTransformers[payloadSpec]
+            switch (sourceType) {
+                case "json": return leafTransformer.fromJson(payload)
+                case "string": return leafTransformer.fromString(payload)
             }
         } else {
             switch (payloadSpec.type) {
@@ -63,10 +44,63 @@ export function getValidator(payloadSpec) {
                     type: "success",
                     result: null
                 }
+                case "undefined": 
+                    if (payload === undefined) {
+                        return {
+                            type: "success",
+                            result: null
+                        }
+                    } else {
+                        return getValidator(payloadSpec.spec, sourceType)(payload)
+                    }
+                case "nullable":
+                    if (payload === null) {
+                        return {
+                            type: "success",
+                            result: null
+                        }
+                    } else {
+                        return getValidator(payloadSpec.of_type, sourceType)(payload)
+                    }
+                case "validated":
+                    const value = getValidator(payloadSpec.of, sourceType)(payload)
+                    switch (value.type) {
+                        case "success":
+                            // @ts-ignore
+                            const checked = payloadSpec.check(value.result)
+                            switch (checked.type) {
+                                case "success": return {
+                                    type: "success",
+                                    result: value.result
+                                }
+                                case "failure": return {
+                                    type: "failure"
+                                }
+                            }
+                        case "failure": return value
+                    }
+                case "simple_sum":
+                    try {
+                        const payloadKeys = Object.keys(payload)
+                        if (payloadKeys.length === 2 && payloadKeys.includes("type") && payloadKeys.includes("values")) {
+                            const key = payload["type"]
+                            const values = payload["values"]
+                            const valuesSpec = payloadSpec["values"][key]
+                            return getValidator(valuesSpec, sourceType)(values)
+                        } else {
+                            return {
+                                type: "failure"
+                            }
+                        }
+                    } catch (e) {
+                        return {
+                            type: "failure"
+                        }
+                    }
                 case "array":
                     if (Array.isArray(payload)) {
                         const results = payload.map(
-                            element => getValidator(payloadSpec.values)(element)
+                            element => getValidator(payloadSpec.values, sourceType)(element)
                         )
                         const collected = results.flatMap(r => {
                             if (r.type === "success") {
@@ -91,23 +125,39 @@ export function getValidator(payloadSpec) {
                         }
                     }
                 case "object":
-
                     try {
                         const payloadKeys = Object.keys(payload)
                         const specKeys = Object.keys(payloadSpec.values)
-                        const missingKey = specKeys.some(specKey => {
-                            payloadKeys.indexOf(specKey) === -1
+                        const extraKey = payloadKeys.some(payloadKey => {
+                            specKeys.indexOf(payloadKey) === -1
                         })
-                        if (missingKey) {
+                        if (extraKey) {
                             return {
                                 type: "failure"
                             }
                         } else {
                             const results = specKeys.map(
                                 specKey => {
-                                    const value = payload[specKey]
                                     const keyPayloadSpec = payloadSpec.values[specKey]
-                                    return [specKey, getValidator(keyPayloadSpec)(value)]
+                                    const value = payload[specKey]
+                                    // @ts-ignore
+                                    if (keyPayloadSpec["type"] === "optional") {
+                                        if (payloadKeys.indexOf(specKey) === -1) {
+                                            return [specKey, {
+                                                type: "skip",
+                                            }]
+                                        } else {
+                                            // @ts-ignore
+                                            const innerKeyPayloadSpec = keyPayloadSpec["spec"]
+                                            return [specKey, getValidator(innerKeyPayloadSpec, sourceType)(value)]
+                                        }
+                                    } else {
+                                        if (payloadKeys.indexOf(specKey) === -1) {
+                                            return [specKey, { type: "failure" }]
+                                        } else {
+                                            return [specKey, getValidator(/** @type { import('./types').PayloadElement } */(keyPayloadSpec), sourceType)(value)]
+                                        }
+                                    }
                                 }
                             )
                             // @ts-ignore
@@ -122,6 +172,7 @@ export function getValidator(payloadSpec) {
                                             // @ts-ignore
                                             [key]: current.result
                                         }
+                                    case "skip": return prev
                                 }
                             }, {})
                             const reducedKeys = Object.keys(reduced)
@@ -175,7 +226,7 @@ export function getPath(path) {
 
         return [`:${split[1]}`, (params) => {
 
-            const result = getValidator(typeDesc)(params[split[1]])
+            const result = getValidator(typeDesc, "string")(params[split[1]])
 
             switch (result.type) {
                 case "success":
@@ -216,14 +267,31 @@ export function getPath(path) {
 }
 
 /**
- * @template { import("./types").EndpointAny } Endpoint
- * @param { Endpoint } endpoint 
- * @param { import("./types").MkHandler<Endpoint> } handler
+ * @param { (registerEndpoint: <Endpoint extends import('./types').EndpointAny>(endpoint: Endpoint, handler: import('./types').MkHandler<Endpoint>) => void) => void } registerEndpoints
  * @returns { Promise<import("http").Server> }
  */
-export function serve(endpoint, handler) {
+export function serve(registerEndpoints) {
     const app = express()
     app.use(express.json())
+    registerEndpoints((endpoint, handler) => {
+        registerExpressEndpoint(app, endpoint, handler)
+    })
+    return new Promise(resolve => {
+        const port = 3000
+        const server = app.listen(port, () => {
+            resolve(server)
+        })
+    })
+}
+
+/**
+ * @template { import("./types").EndpointAny } Endpoint
+ * @param { import("express").Express } app
+ * @param { Endpoint } endpoint 
+ * @param { import("./types").MkHandler<Endpoint> } handler
+ * @returns { void }
+ */
+export function registerExpressEndpoint(app, endpoint, handler) {
 
     const [path, pathParser] = getPath(endpoint.path)
 
@@ -247,29 +315,24 @@ export function serve(endpoint, handler) {
                 send400()
                 break;
             case "success":
-                switch (endpoint.method) {
-                    case "POST":
-                        const inputPayload = request.body
-
-                        const validator = getValidator(endpoint.input)
-                        const result = validator(inputPayload)
-
-                        switch (result.type) {
-                            case "failure":
-                                send400()
-                                break;
-                            case "success":
-                                const handlerRes = handler(paramsResult.result, result.result)
-
-                                const key = Object.keys(handlerRes)[0]
-                                // @ts-ignore
-                                const payload = (handlerRes[key])
-                                const numberKey = Number(key)
-                                if (payload === null) {
-                                    response.status(numberKey).send()
-                                } else {
-                                    response.status(numberKey).send(payload)
-                                }
+                /** @type [ any, import('./types').SourceType ] */
+                const [inputPayload, sourceType] = endpoint.method === "GET" ? [request.params, "string"] : [request.body, "json"]
+                const validator = getValidator(endpoint.input, sourceType)
+                const result = validator(inputPayload)
+                switch (result.type) {
+                    case "failure":
+                        send400()
+                        break;
+                    case "success":
+                        const handlerRes = handler(paramsResult.result, result.result)
+                        const key = Object.keys(handlerRes)[0]
+                        // @ts-ignore
+                        const payload = (handlerRes[key])
+                        const numberKey = Number(key)
+                        if (payload === null) {
+                            response.status(numberKey).send()
+                        } else {
+                            response.status(numberKey).send(payload)
                         }
                 }
         }
@@ -278,16 +341,12 @@ export function serve(endpoint, handler) {
 
     switch (endpoint.method) {
         case "GET": app.get(path, appHandler)
-        case "POST":
-            app.post(path, appHandler)
+        case "POST": app.post(path, appHandler)
+        case "DELETE": app.delete(path, appHandler)
+        case "PATCH": app.patch(path, appHandler)
+        case "PUT": app.put(path, appHandler)
     }
 
-    return new Promise(resolve => {
-        const port = 3000
-        const server = app.listen(port, () => {
-            resolve(server)
-        })
-    })
 }
 
 /**
@@ -366,7 +425,20 @@ export function client(endpoint) {
 
 /** @type { import('./types').LeafTransformer<number> } */
 const numberTransformer = {
-    parse: (string) => {
+    fromJson: (json) => {
+        if (typeof json === "number") {
+            return {
+                type: "success",
+                result: json
+            }
+        } else {
+            return {
+                type: "failure"
+            }
+        }
+    },
+    toJson: (n) => n,
+    fromString: (string) => {
         const n = Number(string)
         if (Number.isNaN(n)) {
             return {
@@ -386,7 +458,20 @@ const numberTransformer = {
 
 /** @type { import('./types').LeafTransformer<string> } */
 const stringTransformer = {
-    parse: (string) => {
+    fromJson: (json) => {
+        if (typeof json === "string") {
+            return {
+                type: "success",
+                result: json
+            }
+        } else {
+            return {
+                type: "failure"
+            }
+        }
+    },
+    toJson: (s) => s,
+    fromString: (string) => {
         return {
             type: "success",
             result: string
@@ -435,4 +520,44 @@ export async function performRequest(requestConfig) {
  */
 export function isAxiosError(e) {
     return e.isAxiosError === true
+}
+
+/**
+ * @param {number} n 
+ * @returns { import('./types').ValidatedElement<import('./types').NumberElement> }
+ */
+export function min(n) {
+    return {
+        type: "validated",
+        of: "number",
+        check: (x) => {
+            return (x < n) ? ({ type: "failure" }) : ({ type: "success" })
+        }
+    }
+}
+
+/**
+ * @param {number} n 
+ * @returns { import('./types').ValidatedElement<import('./types').NumberElement> }
+ */
+export function max(n) {
+    return {
+        type: "validated",
+        of: "number",
+        check: (x) => {
+            return (x > n) ? ({ type: "failure" }) : ({ type: "success" })
+        }
+    }
+}
+
+/**
+ * @template { import('./types').PayloadElement } Spec
+ * @param { Spec } spec
+ * @returns { import('./types').NullableElement<Spec> }
+ */
+export function nullable(spec) {
+    return {
+        type: "nullable",
+        of_type: spec
+    }
 }

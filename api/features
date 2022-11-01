@@ -1,10 +1,7 @@
-- testing
-- output type for client and output type inner
-- all the methods
-- get input
-- construct get input
 - support for headers
 - contramap
-- handle only errors from axios that are described
-- multiple endpoints
-
+- base url
+- leaf extensibility
+- basic validation
+- error messages
+- type error messages 
