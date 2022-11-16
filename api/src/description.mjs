@@ -23,6 +23,21 @@ export function endpoint(path, method, outputs, input) {
 }
 
 /**
+ * @template { string } Path
+ * @template { import('./types').ObjectQuery } Query
+ * @param { Path } path
+ * @param { Query } query
+ * @returns { import('./types').QueryEndpoint<Path, Query> }
+ */
+export function queryEndpoint(path, query) {
+    // @ts-ignore   
+    return {
+        path,
+        query
+    }
+}
+
+/**
  * @template { import('./types').InnerPayloadElement | import('./types').RootElement } Payload
  * @param { Payload } payloadSpec 
  * @param { import('./types').SourceType } sourceType
@@ -347,6 +362,29 @@ export function registerExpressEndpoint(app, endpoint, handler) {
         case "PUT": app.put(path, appHandler)
     }
 
+}
+
+//  * @returns { import('./types').MkQuery<Query["query"]> }
+/**
+ * @template { import('./types').QueryEndpoint<any, any> } QueryEndpoint
+ * @param { QueryEndpoint } queryEndpoint 
+ * @template { import('./types').MkClientQuery<QueryEndpoint["query"]> } Query
+ * @param { Query } query
+ * @returns { import('./types').MkQuery<QueryEndpoint["query"], Query> } 
+ */
+export function queryClient(queryEndpoint, query) {
+    // @ts-ignore
+    return
+}
+
+/**
+ * @template { import('./types').QueryEndpoint<any, any> } Query
+ * @param { Query } queryEndpoint 
+ * @returns { import('./types').MkClientQuery<Query["query"]> }
+ */
+export function xxx(queryEndpoint) {
+    // @ts-ignore
+    return
 }
 
 /**

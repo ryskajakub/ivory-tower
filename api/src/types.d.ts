@@ -9,6 +9,11 @@ export type Endpoint<Method extends HttpMethod, Path, Input extends RootElement 
     outputs: Outputs,
 }
 
+export type QueryEndpoint<Path, Query extends ObjectQuery> = {
+    path: Path,
+    query: Query
+}
+
 export type EndpointAny = Endpoint<HttpMethod, any, RootElement, any>
 
 export type Var<Name, Type extends PathElement> = {
@@ -257,3 +262,82 @@ export type LeafTransformer<T> = {
 }
 
 export type SourceType = "json" | "string"
+
+// export type GetQueryType<T> = null
+
+export type StringQuery = "string"
+
+export type DateQuery = "Date"
+
+export type Many<T> = {
+    type: "many",
+    query: T
+}
+
+export type AtLeastOne<T> = {
+    type: "at_least_one",
+    query: T
+}
+
+export type ZeroOrNone<T> = {
+    type: "zero_or_none",
+    query: T
+}
+
+export type Quantity<T extends SimpleQuery> = Many<T> | AtLeastOne<T> | ZeroOrNone<T>
+
+export type Parametrized<T, U> = {
+    type: "parametrized",
+    query: T,
+    param: U,
+}
+
+export type DistributeQuantity<T extends SimpleQuery> =
+    T extends any ? Quantity<T> : never
+
+export type DistributeParametrized<T, U> =
+    T extends any ? (U extends any ? Parametrized<T, U> : never) : never
+
+export type ObjectFieldQuery = DistributeQuantity<SimpleQuery> | SimpleQuery
+
+export type SimpleQuery = ObjectQuery | StringQuery | DateQuery | ArrayQuery
+
+export type ArrayQuery = {
+    type: "array",
+    values: SimpleQuery
+}
+
+export type ObjectQuery = {
+    type: "object",
+    values: Record<string, ObjectFieldQuery>
+}
+
+export type MkObjectFieldQuery<T, XQuery> =
+    T extends Many<infer A extends SimpleQuery> ? MkAllQuery<A, XQuery>[] :
+    T extends AtLeastOne<infer A extends SimpleQuery> ? [MkAllQuery<A, XQuery>, Array<MkAllQuery<A, XQuery>>] :
+    T extends ZeroOrNone<infer A extends SimpleQuery> ? (MkAllQuery<A, XQuery> | null) :
+    T extends SimpleQuery ? MkAllQuery<T, XQuery> : never
+
+export type MkAllQuery<T extends SimpleQuery, XQuery> = 
+    T extends StringQuery ? string :
+    T extends DateQuery ? Date :
+    T extends ArrayQuery ? Array<MkAllQuery<T["values"], XQuery>> :
+    T extends ObjectQuery ? ({
+        [K in keyof T["values"] as ( XQuery extends Star ? K : K extends keyof XQuery ? K : never)]: MkObjectFieldQuery<T["values"][K], K extends keyof XQuery ? XQuery[K] : never>
+    }) : never
+    // T extends ObjectQuery ? ({
+    //     [K in keyof T["values"]]: [keyof XQuery, K]
+    // }) : never
+
+export type MkQuery<T extends ObjectQuery, XQuery> =  MkAllQuery<T, XQuery>
+
+export type Star = "*"
+
+export type MkClientQuery<T> = 
+    T extends ObjectQuery ?
+    (Star | {
+        [K in keyof T["values"]]?: (T["values"][K] extends Quantity<any> ? T["values"][K]["query"] : T["values"][K]) extends ObjectQuery ? 
+            MkClientQuery<T["values"][K] extends Quantity<any> ? T["values"][K]["query"] : T["values"][K]>
+        : Star
+    })
+    : never
