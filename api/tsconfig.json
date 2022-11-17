@@ -3,13 +3,21 @@
     "allowJs": true,
     "strict": true,
     "checkJs": true,
-    "lib": ["ESNext", "DOM"],
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
     "outDir": "dist",
     "target": "ESNext",
     "noEmit": true,
     "module": "ESNext",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react-jsx",
+    "exactOptionalPropertyTypes": true
   },
-  "include": ["src/**/*", "test/**/*", "check/**/*"],
-  "exclude": ["./node_modules/*"]
+  "include": [
+    "src/**/*",
+    "test/**/*"
+  ]
 }
