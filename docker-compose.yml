@@ -1,17 +1,19 @@
 version: '3.9'
 
 services:
+
   typecheck:
-    image: node:19-bullseye
+    image: node:16-bullseye
     volumes:
       - "./package.json:/app/package.json:ro"
       - "./tsconfig.json:/app/tsconfig.json:ro"
       - "./api/:/app/api:ro"
     command: bash -c 'cd /app && npm install && node_modules/.bin/tsc --watch'
+
   example:
-    image: node:19-bullseye
+    image: node:16-bullseye
     volumes:
       - "./package.json:/app/package.json:ro"
       - "./tsconfig.json:/app/tsconfig.json:ro"
       - "./api/:/app/api:ro"
-    command: bash -c 'cd /app && npm install && node_modules/.bin/nodemon --exec npm run babel && npm run example'
+    command: bash -c 'cd /app && npm install && node_modules/.bin/nodemon --exec bash -c "npm run babel && npm run example"'

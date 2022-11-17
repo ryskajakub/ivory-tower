@@ -37,13 +37,11 @@ import * as ite from "./entity.mjs"
 const field = ite.string.nullable().optional()
 
 const book = {
-    id: ite.number,
-    name: ite.string,
+    name: ite.string.optional().nullable(),
     isbn: ite.string.nullable(),
 }
 
 const review = {
-    id: ite.entity,
     text: ite.string,
 }
 

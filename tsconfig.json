@@ -10,7 +10,8 @@
     "noEmit": true,
     "module": "ESNext",
     "moduleResolution": "node",
-    "exactOptionalPropertyTypes": true
+    "exactOptionalPropertyTypes": true,
+    "preserveWatchOutput": true
   },
   "include": [
     "api/**/*"
