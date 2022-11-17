@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    "outDir": "dist",
+    "target": "ESNext",
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "exactOptionalPropertyTypes": true
+  },
+  "include": [
+    "api/**/*"
+  ]
+}

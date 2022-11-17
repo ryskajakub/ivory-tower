@@ -36,3 +36,22 @@ postgresql basic queries
 one-to-one   | author - author_profile
 many-to-many | book - author
 one-to-many  | book - review
+
+## entities
+
+types
+
+* object
+* sum
+* leaf
+* empty
+
+## query types
+
+### graph
+
+### rest-api
+
+### freeform
+
+### rpc
