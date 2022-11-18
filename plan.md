@@ -26,12 +26,18 @@ many to many array table
 first version
 
 ------
-
-query / rest api
 validation
-react integration
-prisma integration
+filtering
 postgresql basic queries
+second version
+docs
+impl
+
+---
+freeform
+validation
+prisma integration
+react integration
 
 one-to-one   | author - author_profile
 many-to-many | book - author

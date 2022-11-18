@@ -8,6 +8,7 @@ services:
       - "./package.json:/app/package.json:ro"
       - "./tsconfig.json:/app/tsconfig.json:ro"
       - "./api/:/app/api:ro"
+      - "./example/:/app/example:ro"
     command: bash -c 'cd /app && npm install && node_modules/.bin/tsc --watch'
 
   example:
@@ -15,5 +16,24 @@ services:
     volumes:
       - "./package.json:/app/package.json:ro"
       - "./tsconfig.json:/app/tsconfig.json:ro"
-      - "./api/:/app/api:ro"
+      - "./api/:/app/src/api:ro"
+      - "./example/:/app/src/example:ro"
     command: bash -c 'cd /app && npm install && node_modules/.bin/nodemon --exec bash -c "npm run babel && npm run example"'
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres?schema=public
+  
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - 6001:5432
+    command: ["postgres", "-c", "log_statement=all"]
+  
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 6002:8080

@@ -1,5 +1,6 @@
-import { call } from "./client";
-import * as it from "./index";
+import * as it from "../api/index";
+
+import { createMigrations, printMigrations } from "../api/migration";
 
 const book = {
   name: it.string,
@@ -30,7 +31,8 @@ const entities = {
   genre,
 };
 
-const api = it.api(
+
+export const bookShop = it.api(
   entities,
   (entities) =>
     [
@@ -41,4 +43,15 @@ const api = it.api(
     ] as const
 );
 
-const result = call(api, true as const);
+
+
+// console.log("inspected")
+// console.log(inspect(api, true, null))
+
+// it.serve(api)
+
+// const result = call(api, {
+//   reviews: { where: ({ text }) => text["="]("abc"), select: { text: true } },
+//   authors: { name: true },
+// } as const);
+

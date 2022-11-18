@@ -36,58 +36,52 @@ export type LeafSpec = NumberSpec | StringSpec
 
 export type Spec = RootSpec | LeafSpec
 
-// export type CheckFields<Fields> = {
-//     [K in keyof Fields]: Fields[K]
-// }
-
-// export type CheckAttrs<$Spec> = $Spec extends Nullable ? $Spec & Nullable : $Spec
-
-// export type CheckEntity<Entity extends Relation & Pick<ObjectSpec, "fields">> = {
-//     [K in keyof Entity["relations"]]: Entity["relations"][K]
-// } & {
-//         [K in keyof Entity["fields"]]: CheckAttrs<Entity["fields"][K]>
-//     }
-
-// export type CheckQueryEntity<$Spec extends ObjectSpec> = CheckSpec<$Spec>
-
-// export type CheckSpec<$Spec> =
-//     $Spec extends LeafSpec ? LeafSpec :
-//     $Spec extends EmptySpec ? EmptySpec :
-//     $Spec extends ObjectSpec ? {
-//         type: "object",
-//         fields: CheckFields<$Spec["fields"]>
-//     } :
-//     $Spec extends UnionSpec ? {
-//         [K in keyof $Spec["options"]]: CheckSpec<$Spec["options"][K]>
-//     } : never
-
 export type Relation = {
     relations: Record<string, string>
-}
-
-export type Leaf<Spec> = {
-    nullable: () => Leaf<Spec & { nullable: true }>
-    optional: () => Leaf<Spec & { optional: true }>
-    spec: Spec
 }
 
 export type TypeLevel<T> = 
     T extends "string" ? string : "number"
 
-function leaf<T extends LeafSpec>(obj: T): Leaf<T> {
-    const objWithLeafMethods = <X>(spec: X): Leaf<X> => ({
-        spec,
-        nullable: () => objWithLeafMethods({...spec, nullable: true}) ,
-        optional: () => objWithLeafMethods({...spec, optional: true})
-    })
-    return objWithLeafMethods(obj)
+export class HasSpec<$Spec> {
+    private spec;
+    constructor(spec: $Spec) {
+        this.spec = spec
+    }
+    protected getSpec = () => {
+        return this.spec
+    }
 }
 
-export const number = leaf({
+export class Leaf<$Spec, OmittedMethods extends never | 'nullable' | 'optional' = never> extends HasSpec<$Spec> {
+
+    constructor(spec: $Spec) {
+        super(spec)
+    }
+
+    nullable = (): Omit<Leaf<$Spec & { nullable: true }, 'nullable'>, 'nullable' | OmittedMethods> => {
+        // @ts-ignore
+        return new Leaf({...this.spec, nullable: true})
+    }
+
+    optional = (): Omit<Leaf<$Spec & { optional: true }, 'optional'>, 'optional' | OmittedMethods> => {
+        // @ts-ignore
+        return new Leaf({...this.spec, optional: true})
+    }
+
+}
+
+export class RevealSpec extends HasSpec<any> {
+    getSpec = () => { 
+        return super.getSpec()
+    }
+}
+
+export const number = new Leaf({
     type: "number",
 })
 
-export const string = leaf({
+export const string = new Leaf({
     type: "string"
 })
 

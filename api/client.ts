@@ -11,16 +11,50 @@ export type InnerRequestType<T extends EntityLike> =
         [K in keyof T["fields"]]?: true
     } & (
         "relations" extends keyof T ?
-            RequestType<T["relations"]> : {}
+            RequestType<T["relations"], "inner"> : {}
     )>
     
+type Nesting = "toplevel" | "inner"
 
-export type RequestType<T> =
+type Equality = {
+    type: "boolexpr"
+    args: any[]
+}
+
+class Arg<A> {
+
+    #arg;
+
+    constructor(arg: any) {
+        this.#arg = arg
+    }
+
+    "=" = (other: Runtime<A>): Equality => {
+        return {
+            type: "boolexpr",
+            args: [this, other]
+        }
+    }
+
+    protected getArg = () => {
+        return this.#arg
+    }
+}
+
+type MakeWhereArgs<T> =
     {
-        [K in keyof T]?: true | (
-            T[K] extends EntityLike ? ExpandType<InnerRequestType<T[K]>> : true
-        )
-    } | true
+        [K in keyof T]: Arg<T[K]>
+    } 
+
+export type RequestType<T, $Nesting extends Nesting> =
+    {
+        [K in keyof T]?: (
+            T[K] extends EntityLike ? ExpandType<InnerRequestType<T[K]>> : never
+        ) | ($Nesting extends "toplevel" ? (T[K] extends EntityLike ? {
+            select: ExpandType<InnerRequestType<T[K]>>,
+            where: (filter: MakeWhereArgs<T[K]["fields"]>) => Equality
+        } :never ) : never )
+    } 
 
 export type Quantify<Api, Wrapee> = 
     "type" extends keyof Api ?
@@ -55,7 +89,7 @@ export type Check<T> = {
     [K in keyof T]: Check<T[K]>
 }
 
-export function call<T, X extends RequestType<T>>(api: Api<T>, request: X): ExpandType<ReturnType<T, X>> {
+export function call<T, X extends RequestType<T, "toplevel">>(api: Api<T>, request: X): ExpandType<ReturnType<T, X>> {
     // @ts-ignore
     return
 }
