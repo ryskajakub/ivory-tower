@@ -23,6 +23,10 @@ export type TypeMap<Map extends [any, any][], T> =
         )
     ) : never
 
+export type ExpandType<T> = {} & {
+    [K in keyof T]: T[K]
+}
+
 export type DisjointUnion<Obj1, Obj2> = Obj1 extends Record<string, any> ? (
     Obj2 extends Record<string, any> ? (
         Disjoint<keyof Obj1, keyof Obj2> extends true ? (Obj1 & Obj2) : never
@@ -87,3 +91,10 @@ export type MakeObj<T extends any[], Acc> =
 
 export type Select<T extends NamedColumn<any, any, any>[]> = 
     AllSelectableOrAggregable<T> extends true ? (UniqueNames<T> extends true ? OrderBy<MakeObj<T, {}>> : never) : never
+
+export type TupleToUnion<T> =
+    T extends readonly []
+      ? never
+      : (T extends readonly [infer First, ...infer Rest]
+            ? First | TupleToUnion<Rest>
+            : never);
