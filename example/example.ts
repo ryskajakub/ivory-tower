@@ -1,6 +1,4 @@
-import * as it from "../api/index";
-
-import { createMigrations, printMigrations } from "../api/migration";
+import * as it from "../api/src/index";
 
 const book = {
   name: it.string,
@@ -42,8 +40,6 @@ export const bookShop = it.api(
       entities.book.manyToMany(entities.genre),
     ] as const
 );
-
-
 
 // console.log("inspected")
 // console.log(inspect(api, true, null))

@@ -11,10 +11,13 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "exactOptionalPropertyTypes": true,
-    "preserveWatchOutput": true
+    "preserveWatchOutput": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "api/**/*",
-    "example/**/*"
+    "example/**/*",
+    "db/**/*",
+    "util/**/*"
   ]
 }

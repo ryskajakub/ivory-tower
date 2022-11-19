@@ -15,7 +15,6 @@ type Field = {
 }
 
 type Relation = {
-    name: string,
     entity: string,
     plural: boolean,
     optional: boolean,
@@ -85,7 +84,6 @@ export function createMigrations(api: Api<any>): Table[] {
                     case "manyToMany":
                     case "oneToMany":
                         const relation: Relation = {
-                            name: toEntity,
                             entity: toEntity,
                             plural: true,
                             optional: false,
@@ -93,7 +91,6 @@ export function createMigrations(api: Api<any>): Table[] {
                         return [$relationFields, [...$relations, relation] ,$fkRelations]
                     case "fromOne":
                         const relation2: Relation = {
-                            name: toEntity,
                             entity: toEntity,
                             plural: false, 
                             optional: true,
@@ -135,19 +132,20 @@ function printAttributes(attributes: Attribute[]): string {
 export function printMigrations(tables: Table[]) {
     return tables.reduce((acc, t) => {
 
+        const tableName = plural(t.name)
+
         const fields = t.fields.map(f => `\t${f.name} ${printType(f.type as any)}${printNullable(f.nullable)}${printAttributes(f.attributes)}\n`).reduce((x, y) => x + y, "")
 
-        const relations = t.relations.map(r => `\t${r.plural ? plural(r.name) : r.name} ${r.name}${r.plural ? "[]" : ""}${r.optional ? "?" : ""}\n` ).reduce((x, y) => x + y, "")
+        const relations = t.relations.map(r => `\t${r.plural ? plural(r.entity) : r.entity} ${plural(r.entity)}${r.plural ? "[]" : ""}${r.optional ? "?" : ""}\n` ).reduce((x, y) => x + y, "")
 
-        const fks = t.fkRelations.map(fk => `\t${fk.name} ${fk.entity} @relation(fields: [${fk.relation.fields}], references: [${fk.relation.references}])\n`).reduce((x, y) => x + y, "")
+        const fks = t.fkRelations.map(fk => `\t${fk.name} ${plural(fk.entity)} @relation(fields: [${fk.relation.fields}], references: [${fk.relation.references}])\n`).reduce((x, y) => x + y, "")
 
-        return `
-${acc}model ${t.name} {
+        return `${acc}
+model ${tableName} {
 ${fields}
 ${relations}
 ${fks}
 }
-
 `
     }, "")
 }

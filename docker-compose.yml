@@ -9,7 +9,10 @@ services:
       - "./tsconfig.json:/app/tsconfig.json:ro"
       - "./api/:/app/api:ro"
       - "./example/:/app/example:ro"
-    command: bash -c 'cd /app && npm install && node_modules/.bin/tsc --watch'
+      - "./db/:/app/db:ro"
+      - "./util/:/app/util:ro"
+    working_dir: /app
+    command: bash -c 'npm install && node_modules/.bin/tsc --watch'
 
   example:
     image: node:16-bullseye
@@ -18,7 +21,10 @@ services:
       - "./tsconfig.json:/app/tsconfig.json:ro"
       - "./api/:/app/src/api:ro"
       - "./example/:/app/src/example:ro"
-    command: bash -c 'cd /app && npm install && node_modules/.bin/nodemon --exec bash -c "npm run babel && npm run example"'
+      - "./util/:/app/src/util:ro"
+      - "./db/:/app/src/db:ro"
+    working_dir: /app
+    command: bash -c 'npm install && node_modules/.bin/nodemon --exec bash -c "npm run babel && npm run example"'
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres?schema=public
   

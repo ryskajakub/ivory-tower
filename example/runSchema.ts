@@ -1,4 +1,4 @@
-import { createMigrations, printMigrations } from "../api/migration"
+import { createMigrations, printMigrations } from "../api/src/migration"
 import { bookShop } from "./example"
 
 console.log(`

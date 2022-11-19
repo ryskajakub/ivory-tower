@@ -1,3 +1,4 @@
+import axios from "axios";
 import { Api, IsTargetMany } from "./api";
 import { Runtime } from "./entity";
 import { ExpandType } from "./types";
@@ -89,7 +90,7 @@ export type Check<T> = {
     [K in keyof T]: Check<T[K]>
 }
 
-export function call<T, X extends RequestType<T, "toplevel">>(api: Api<T>, request: X): ExpandType<ReturnType<T, X>> {
-    // @ts-ignore
-    return
+export async function call<T, X extends RequestType<T, "toplevel">>(api: Api<T>, request: X): Promise<ExpandType<ReturnType<T, X>>> {
+    const response = await axios.post<ReturnType<T, X>>(`http://localhost:6000/graph`, request) 
+    return response.data
 }
