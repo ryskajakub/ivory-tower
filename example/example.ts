@@ -41,7 +41,7 @@ export const bookShop = it.api(
       entities.review.manyToOne(entities.book),
       entities.book.manyToMany(entities.author),
       entities.author.toOne(entities.user),
-      // entities.book.manyToMany(entities.genre),
+      entities.book.manyToMany(entities.genre),
     ] as const
 );
 
@@ -57,8 +57,9 @@ const selects = it.serve(bookShop, {
   // users: { password: true, handle: true, author: {} } ,
   // reviews: { text: true, book: { name: true } }
   // books: { name: true, reviews: {} }
-  books: { name: true, authors: { name: true } }
+  // books: { name: true, authors: { name: true, user: {} }, reviews: { text: true } }
   // authors: { name: true, books: { isbn: true, name: true} }
+  books: { name: true, isbn: true, reviews: { text: true }, authors: { surname: true } }
 })
 
 selects.forEach(s => {
