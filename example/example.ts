@@ -58,11 +58,8 @@ const selects = it.serve(bookShop, {
   // reviews: { text: true, book: { name: true } }
   // books: { name: true, reviews: {} }
   // books: { name: true, authors: { name: true, user: {} }, reviews: { text: true } }
-  // authors: { name: true, books: { isbn: true, name: true} }
+  authors: { name: true, books: { isbn: true, name: true} },
   books: { name: true, isbn: true, reviews: { text: true }, authors: { surname: true } }
 })
 
-selects.forEach(s => {
-  // console.error(insp2(s))
-  console.error(print(s))
-})
+console.log(selects)

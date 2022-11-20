@@ -25,14 +25,17 @@ export function printSqlExpression(condition: SqlExpression) {
     return value(condition)
 }
 
-// /**
-//  * @param { import("./Sql").SelectQuery } sq 
-//  * @param {number} [indentParam]
-//  * @returns {string}
-//  */
-export function print(sq: SelectQuery, indentParam?: number): string {
-
+export function print(sq: SelectQuery | SelectQuery[], indentParam?: number): string {
     const indent = indentParam ? indentParam : 0
+    if(Array.isArray(sq)) {
+        return sq.map(x => printSingle(x, indent)).reduce((x, y) => `${x}\nUNION ALL\n${y}`)
+    } else {
+        return printSingle(sq, indent)
+    }
+}
+
+export function printSingle(sq: SelectQuery, indent: number): string {
+
     const indentStr = [...Array(indent).keys()].map(_ => "\t").reduce((prev, current) => `${prev}${current}`, "")
     const fields = sq.fields.map(field => printSqlExpression(field.expression) + (field.as === null ? "" : ` AS ${field.as}`))
         .reduce((prev, current) => `${prev}, ${current}`)
@@ -45,8 +48,8 @@ export function print(sq: SelectQuery, indentParam?: number): string {
                 case "JoinTable": 
                     return ` ${joinKind.tableName}` + (joinKind.as === null ? "" : ` AS ${joinKind.as}` )
                 case "JoinQuery":
-                    return `(\n${print(joinKind.query, indent + 2)}) AS ${joinKind.query.as}`
-
+                    const asClause = Array.isArray(joinKind.query) ? `` : ` AS ${joinKind.query.as}`
+                    return `(\n${print(joinKind.query, indent + 2)})${asClause}`
             }
         } 
 
@@ -80,7 +83,6 @@ export function print(sq: SelectQuery, indentParam?: number): string {
     const order = sq.order.length === 0 ? null : `ORDER BY ${sq.order.map((ob) => ob.field + printDirection(ob.direction))}`
     const limit = sq.limit === null ? null : `LIMIT ${sq.limit}`
     const offset = sq.offset === null ? null : `OFFSET ${sq.offset}`
-    /** @type { (string | null)[] } */
     const allElements = [select, from, where, groupBy, order, limit, offset]
     const string = allElements.filter(e => e !== null).map(e => `${indentStr}${e}\n`)
         .reduce((prev, current) => `${prev}${current}`)
@@ -98,11 +100,6 @@ export function path(str: string): SqlExpression {
     }
 }
 
-// /**
-//  * @template {any | Array<any>} T
-//  * @param {T} args
-//  * @returns { ( print: ((args: T, printSqlExpression: ((e: import("./Sql").SqlExpression) => string)) => string) ) => import("./Sql").AnyFormFunction }
-//  */
 export function anyFormFunction<T extends any | Array<any>>(args: T): ( print: ((args: T, printSqlExpression: ((e: SqlExpression) => string)) => string) ) => AnyFormFunction {
     return (print) => {
 

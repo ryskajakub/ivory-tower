@@ -18,7 +18,7 @@ export type JoinTable = {
 
 export type JoinQuery = {
     type: "JoinQuery",
-    query: SelectQuery,
+    query: SelectQuery | SelectQuery[],
 }
 
 export type JoinKind = JoinTable | JoinQuery

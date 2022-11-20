@@ -1,3 +1,4 @@
+import { print } from "../../db/src/print";
 import { Field, FromItem, Join, Literal, Path, SelectQuery, selectQuery, SqlExpression, SqlFunction } from "../../db/src/syntax";
 import { Api, RelationshipType } from "./api";
 import { plural } from "./plural";
@@ -193,10 +194,18 @@ export function processEntity(outerEntityName: string, { fields, relations }: En
 
 export function serve<T>(api: Api<T>, request: Request) {
 
-    return Object.entries(api.entities as Entities).flatMap(([entityName, entity]) => {
+    const selects = Object.entries(api.entities as Entities).flatMap(([entityName, entity]) => {
         const applied = applyRequestKey(entityName, entity.type, request)
         return applied.map(outerEntityRequest => {
             const [jsonBuildFields, joinItems] = processEntity(entityName, entity, outerEntityRequest)
+            const typeField: Field = {
+                expression: {
+                    type: "literal",
+                    value: `'${plural(entityName)}'`,
+                    dbType: null
+                },
+                as: "type"
+            }
             const field: Field = {
                 expression: jsonBuildFields,
                 as: "data"
@@ -209,9 +218,37 @@ export function serve<T>(api: Api<T>, request: Request) {
                 },
                 joins: joinItems
             }
-            const select = selectQuery({ froms: [from], fields: [field] })
+            const select = selectQuery({ froms: [from], fields: [typeField, field] })
             return select
         })
     })
+
+    i += 1
+
+    const finalSelect = selectQuery({
+        froms: [{
+            from: {
+                type: "JoinQuery",
+                query: selects,
+            },
+            joins: []
+        }],
+        fields: [{ 
+            as: "result",
+            expression: {
+                type: "function",
+                name: "JSONB_OBJECT_AGG",
+                args: [{
+                    type: "path",
+                    value: "type"
+                }, {
+                    type: "path",
+                    value: "data"
+                }]
+            }
+        }],
+        as: "ultimate"
+    })
+    return `${print(finalSelect)}AS ultimate`
 
 }
