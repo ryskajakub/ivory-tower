@@ -33,12 +33,15 @@ type Table = {
     name: string,
     fields: Field[],
     relations: Relation[],
-    fkRelations: ForeignKeyRelation[]
+    fkRelations: ForeignKeyRelation[],
+    compoundId: string[],
 }
 
 export function createMigrations(api: Api<any>): Table[] {
 
-    const tables: Table[] = Object.entries(api.entities).map(([key, value]) => {
+    const tables: Table[] = Object.entries(api.entities).flatMap(([key, value]) => {
+
+        const tableName = plural(key)
 
         const entityFields = Object.entries((value as any).fields).map(
             ([fieldKey, value]) => {
@@ -61,8 +64,9 @@ export function createMigrations(api: Api<any>): Table[] {
             attributes: [{ name:  "id", argument: null }, { name: "default", argument: "autoincrement()"}]
         }
 
-        const [relationFields, relations, fkRelations] = Object.entries((value as any).relations).reduce<[Field[], Relation[], ForeignKeyRelation[]]>(
-            ([$relationFields, $relations, $fkRelations], [toEntity, relationType]) => {
+        const [relationFields, relations, fkRelations, models] = Object.entries((value as any).relations).reduce<[Field[], Relation[], ForeignKeyRelation[], Table[]]>(
+            ([$relationFields, $relations, $fkRelations, $models], [toEntity, { type: relationType }]) => {
+
                 switch (relationType as RelationshipType) {
                     case "manyToOne":
                     case "toOne":
@@ -80,36 +84,83 @@ export function createMigrations(api: Api<any>): Table[] {
                                 references: "id"
                             } 
                         }
-                        return [[...$relationFields, field], $relations, [...$fkRelations, fk]]
-                    case "manyToMany":
+                        return [[...$relationFields, field], $relations, [...$fkRelations, fk], $models]
                     case "oneToMany":
                         const relation: Relation = {
                             entity: toEntity,
                             plural: true,
                             optional: false,
                         }
-                        return [$relationFields, [...$relations, relation] ,$fkRelations]
+                        return [$relationFields, [...$relations, relation] ,$fkRelations, $models]
                     case "fromOne":
                         const relation2: Relation = {
                             entity: toEntity,
                             plural: false, 
                             optional: true,
                         }
-                        return [$relationFields, [...$relations, relation2] ,$fkRelations]
+                        return [$relationFields, [...$relations, relation2] ,$fkRelations, $models]
+                    case "manyToMany": 
+                        const relation3: Relation = {
+                            entity: `${tableName}_${toEntity}`,
+                            plural: true,
+                            optional: false
+                        }
+                        const f1 = {
+                            name: `${key}_id`,
+                            attributes: [],
+                            type: "number",
+                            nullable: false,
+                        }
+                        const f2 = {
+                            name: `${toEntity}_id`,
+                            attributes: [],
+                            type: "number",
+                            nullable: false
+                        }
+                        const model: Table = {
+                            name: `${tableName}_${plural(toEntity)}`,
+                            fields: [f1, f2],
+                            relations: [],
+                            fkRelations: [{
+                                name: plural(key),
+                                entity: key,
+                                relation: {
+                                    fields: f1.name,
+                                    references: "id"
+                                }
+                            }, {
+                                name: plural(toEntity),
+                                entity: toEntity,
+                                relation: {
+                                    fields: f2.name,
+                                    references: "id"
+                                }
+                            }],
+                            compoundId: [f1.name, f2.name]
+                        }
+                        return [$relationFields, [...$relations, relation3], $fkRelations, [...$models, model]]
+                    case "reverseManyToMany":
+                        const relation4: Relation = {
+                            entity: `${plural(toEntity)}_${key}`,
+                            plural: true,
+                            optional: false
+                        }
+                        return [$relationFields, [...$relations, relation4], $fkRelations, $models]
                 }
             }
-        , [[],[],[]])
+        , [[],[],[],[]])
 
         const fields = [primaryField, ...relationFields, ...entityFields]
 
         const table: Table = {
-            name: key,
+            name: tableName,
             fields,
             relations,
-            fkRelations
+            fkRelations,
+            compoundId: []
         }
 
-        return table
+        return [table, ...models]
     })
     return tables
 }
@@ -132,7 +183,7 @@ function printAttributes(attributes: Attribute[]): string {
 export function printMigrations(tables: Table[]) {
     return tables.reduce((acc, t) => {
 
-        const tableName = plural(t.name)
+        const tableName = t.name
 
         const fields = t.fields.map(f => `\t${f.name} ${printType(f.type as any)}${printNullable(f.nullable)}${printAttributes(f.attributes)}\n`).reduce((x, y) => x + y, "")
 
@@ -140,11 +191,14 @@ export function printMigrations(tables: Table[]) {
 
         const fks = t.fkRelations.map(fk => `\t${fk.name} ${plural(fk.entity)} @relation(fields: [${fk.relation.fields}], references: [${fk.relation.references}])\n`).reduce((x, y) => x + y, "")
 
+        const compoundId = t.compoundId.length === 0 ? `` : `@@id([${t.compoundId.join(", ")}])`
+
         return `${acc}
 model ${tableName} {
 ${fields}
 ${relations}
 ${fks}
+\t${compoundId}
 }
 `
     }, "")

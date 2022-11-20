@@ -4,7 +4,7 @@ export type ColumnDirection = "default" | "ASC" | "DESC"
 
 export type JoinType = "left" | "inner"
 
-export const CharOperators = /** @type {const} */ (["=", ">=", "<>", "<=", ">", "<"]);
+export const CharOperators = ["=", ">=", "<>", "<=", ">", "<"] as const;
 
 export type CharOperator = TupleToUnion<typeof CharOperators>
 export type WordOperator = "AND" | "OR" | "IN"
@@ -54,6 +54,21 @@ export type SelectQuery = Readonly<{
     offset: number | null,
     as: string | null, 
 }>
+
+export function selectQuery(obj: Partial<SelectQuery>) {
+    const q: SelectQuery = {
+        froms: [],
+        where: null,
+        groupBy: [],
+        fields: [],
+        order: [],
+        limit: null,
+        offset: null,
+        as: null, 
+        ...obj
+    }
+    return q
+}
 
 export type FunctionName = string
 

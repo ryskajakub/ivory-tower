@@ -1,4 +1,6 @@
+import { inspect } from "util";
 import * as it from "../api/src/index";
+import { print } from "../db/src/print";
 
 const book = {
   name: it.string,
@@ -11,10 +13,12 @@ const review = {
 
 const author = {
   name: it.string,
+  surname: it.string,
 };
 
 const user = {
   password: it.string,
+  handle: it.string
 };
 
 const genre = {
@@ -36,18 +40,28 @@ export const bookShop = it.api(
     [
       entities.review.manyToOne(entities.book),
       entities.book.manyToMany(entities.author),
-      entities.user.fromOne(entities.author),
-      entities.book.manyToMany(entities.genre),
+      entities.author.toOne(entities.user),
+      // entities.book.manyToMany(entities.genre),
     ] as const
 );
 
 // console.log("inspected")
-// console.log(inspect(api, true, null))
+// console.log(inspect(bookShop.entities, true, null))
 
-// it.serve(api)
+// @ts-ignore
+const insp = (x) => inspect(x, true, null)
+const insp2 = (x) => JSON.stringify(x, undefined, 2)
+// const selects = it.serve(bookShop, {  })
+const selects = it.serve(bookShop, { 
+  // authors: { surname: true, user: {} } ,
+  // users: { password: true, handle: true, author: {} } ,
+  // reviews: { text: true, book: { name: true } }
+  // books: { name: true, reviews: {} }
+  books: { name: true, authors: { name: true } }
+  // authors: { name: true, books: { isbn: true, name: true} }
+})
 
-// const result = call(api, {
-//   reviews: { where: ({ text }) => text["="]("abc"), select: { text: true } },
-//   authors: { name: true },
-// } as const);
-
+selects.forEach(s => {
+  // console.error(insp2(s))
+  console.error(print(s))
+})

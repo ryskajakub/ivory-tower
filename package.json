@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "babel": "node_modules/.bin/babel --extensions '.ts' --source-maps --presets @babel/preset-typescript --out-dir dist src",
-    "example": "node --enable-source-maps --es-module-specifier-resolution=node dist/example/runServer.js",
-    "schema": "node --enable-source-maps --es-module-specifier-resolution=node dist/example/runSchema.js > schema.prisma",
-    "migrate": "node_modules/.bin/prisma migrate dev --schema=./schema.prisma"
+    "example": "node --enable-source-maps --es-module-specifier-resolution=node dist/example/example.js",
+    "schema": "node --enable-source-maps --es-module-specifier-resolution=node dist/example/runSchema.js > schema.prisma && cat schema.prisma",
+    "migrate": "npm run schema && node_modules/.bin/prisma migrate dev --schema=./schema.prisma"
   },
   "type": "module",
   "repository": {

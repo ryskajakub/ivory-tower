@@ -1,9 +1,9 @@
 import { mapValues } from "./helpers"
 import { ExpandType } from "./types"
 
-export type RelationshipType = "manyToOne" | "oneToMany" | "manyToMany" | "toOne" | "fromOne"
+export type RelationshipType = "manyToOne" | "oneToMany" | "manyToMany" | "toOne" | "fromOne" | "reverseManyToMany"
 
-const allRelationshipTypes = ["manyToOne", "oneToMany", "manyToMany", "toOne", "fromOne"] as const
+const allRelationshipTypes = ["manyToOne", "oneToMany", "manyToMany", "toOne", "fromOne", "reverseManyToMany"] as const
 
 type Pointer<To, Type extends RelationshipType> = {
     to: To,
@@ -29,14 +29,16 @@ type MkE<Entities> = {
 type ReverseRelationshipType<$RelationshipType extends RelationshipType> = 
     $RelationshipType extends "manyToOne" ? "oneToMany" : 
     $RelationshipType extends "oneToMany" ? "manyToOne" :
-    $RelationshipType extends "manyToMany" ? "manyToMany" :
+    $RelationshipType extends "manyToMany" ? "reverseManyToMany" :
+    $RelationshipType extends "reverseManyToMany" ? "manyToMany" :
     $RelationshipType extends "toOne" ? "fromOne" : "toOne" 
 
 const reverseRelationshipType = (rel: RelationshipType): RelationshipType => {
     switch(rel) {
         case "fromOne": return "toOne"
         case "toOne": return "fromOne"
-        case "manyToMany": return "manyToMany"
+        case "manyToMany": return "reverseManyToMany"
+        case "reverseManyToMany": return "manyToMany"
         case "manyToOne": return "oneToMany"
         case "oneToMany": return "manyToOne"
     }
@@ -83,7 +85,7 @@ type MkEnhancedEntity<Key, Entity, AllEntities, Rels extends readonly any[]> =
             {} extends Ptrs ? {} :
             {
                 relations: {
-                    [K in keyof Ptrs as Pluralify<K, Ptrs[K]>]: {
+                    [K in keyof Ptrs]: {
                         type: Ptrs[K],
                     } & (
                         K extends (keyof AllEntities) ? MkEnhancedEntity<K, AllEntities[K], AllEntities, Rest> : never
@@ -94,9 +96,9 @@ type MkEnhancedEntity<Key, Entity, AllEntities, Rels extends readonly any[]> =
         : never
     )
 
-type PluralName<Name> = Name extends string ? `${Name}s` : Name
+// type PluralName<Name> = Name extends string ? `${Name}s` : Name
 
-type Pluralify<Name, Type> = IsTargetMany<Type> extends true ? PluralName<Name> : Name
+// type Pluralify<Name, Type> = IsTargetMany<Type> extends true ? PluralName<Name> : Name
 
 export type IsTargetMany<Name> = Name extends `${infer Ignore}ToMany` ? true : false
 
@@ -126,9 +128,11 @@ export function api<Entities extends Record<string, any>, Relationships extends 
 
     const dealWithEntities = ($entities: Record<string, any>, $relations: readonly AnyRelationship[]) => {
 
-        const enrichedEntities = Object.entries($entities).map(([entityKey, entityValue]) => {
+        // @ts-ignore
+        const enrichEntity = (entityKey, entityValue, applicableRelations) => {
 
-            const [matchingPointers, restRelations] = $relations.reduce<[Record<string, any>, AnyRelationship[]]>(([$matchingPointers, $restRelations], relation) => {
+            // @ts-ignore
+            const [matchingPointers, restRelations] = applicableRelations.reduce<[Record<string, any>, AnyRelationship[]]>(([$matchingPointers, $restRelations], relation) => {
                 const {from, to, type} = relation
                 if (from === entityKey) {
                     return [{...$matchingPointers, [to]: type }, $restRelations]
@@ -139,16 +143,29 @@ export function api<Entities extends Record<string, any>, Relationships extends 
                 return [$matchingPointers, [...$restRelations, relation]]
             }, [{}, []])
 
+            // @ts-ignore
             const relationsForEntity = Object.keys(matchingPointers).length === 0 ? {} : {
-                relations: matchingPointers
+                relations: mapValues(matchingPointers, (relationType, $entityKey) => {
+
+                    const $entityValue = entities[$entityKey]
+
+                    return {
+                        type: relationType,
+                        ...enrichEntity($entityKey, $entityValue, restRelations)
+                    }
+                })
             }
 
-            const e = 
-                [entityKey, {
-                    ...relationsForEntity,
-                    fields: entityValue
-                }]
+            // @ts-ignore
+            const e = {
+                ...relationsForEntity,
+                fields: entityValue
+            }
             return e
+        }
+
+        const enrichedEntities = Object.entries($entities).map(([entityKey, entityValue]) => {
+            return [entityKey, enrichEntity(entityKey, entityValue, $relations)]
         })
 
         return Object.fromEntries(enrichedEntities)

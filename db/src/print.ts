@@ -1,0 +1,124 @@
+import { AnyFormFunction, ColumnDirection, JoinKind, JoinType, Operator, SelectQuery, SqlExpression } from "./syntax"
+
+export function printSqlExpression(condition: SqlExpression) {
+
+    // /** @type { (op: import("./Sql").Operator) => string } */
+    const printOperator = (op: Operator) => {
+        return op
+    }
+
+    // /** @type { (arg: import("./Sql").SqlExpression ) => string } */
+    const value = (arg: SqlExpression): string => {
+        switch (arg.type) {
+            case "literal": return `${arg.value}`
+            case "path": return arg.value
+            case "binary": return `${value(arg.arg1)} ${printOperator(arg.operator)} ${value(arg.arg2)}`
+            case "negation": return `NOT ${value(arg)}`
+            case "function":
+                const args = arg.args.map(a => value(a)).join(", ")
+                return `${arg.name}(${args})`
+            case "anyFormFunction": return arg.print(arg.args, value)
+            case "queryExpression": return `(${print(arg.query)})`
+        }
+    }
+
+    return value(condition)
+}
+
+// /**
+//  * @param { import("./Sql").SelectQuery } sq 
+//  * @param {number} [indentParam]
+//  * @returns {string}
+//  */
+export function print(sq: SelectQuery, indentParam?: number): string {
+
+    const indent = indentParam ? indentParam : 0
+    const indentStr = [...Array(indent).keys()].map(_ => "\t").reduce((prev, current) => `${prev}${current}`, "")
+    const fields = sq.fields.map(field => printSqlExpression(field.expression) + (field.as === null ? "" : ` AS ${field.as}`))
+        .reduce((prev, current) => `${prev}, ${current}`)
+    const select = `SELECT ${fields}`
+    const fromItems = sq.froms.map(fi => {
+
+        // /** @type {(joinKind: import("./Sql").JoinKind) => string } */
+        const mkJoinKind = (joinKind: JoinKind): string => {
+            switch (joinKind.type) {
+                case "JoinTable": 
+                    return ` ${joinKind.tableName}` + (joinKind.as === null ? "" : ` AS ${joinKind.as}` )
+                case "JoinQuery":
+                    return `(\n${print(joinKind.query, indent + 2)}) AS ${joinKind.query.as}`
+
+            }
+        } 
+
+        const f1 = mkJoinKind(fi.from)
+        // const f1 = typeof fi.from === 'string' ?
+        //     `${indentStr}\t${fi.from}` : `${indentStr}\t(\n${print(fi.from, indent + 2)}${indentStr}\t) AS ${fi.from.as}`
+        // /** @type {(joinType: import("./From").JoinType) => string} */
+        const printJoinType = (joinType: JoinType) => {
+            switch (joinType) {
+                case "left": return "LEFT JOIN"
+                case "inner": return "JOIN"
+            }
+        }
+
+        const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + mkJoinKind(join.kind) + (` ON ${printSqlExpression(join.on)}`)).reduce((prev, current) => `${prev}${current}`, "")
+        return `${f1}${joins}`
+    }).reduce((prev, current) => `${prev},\n${current}`)
+
+    // /** @type {(direction: import("./Column").ColumnDirection) => string} */
+    const printDirection = (direction: ColumnDirection) => {
+        switch (direction) {
+            case "default": return ""
+            case "ASC": return " ASC"
+            case "DESC": return " DESC"
+        }
+    }
+
+    const from = `FROM\n${fromItems}`
+    const where = sq.where === null ? null : (`WHERE ${printSqlExpression(sq.where)}`)
+    const groupBy = sq.groupBy.length === 0 ? null : `GROUP BY ${sq.groupBy.map(item => printSqlExpression(item)).reduce((prev, current) => `${prev}, ${current}`)}`
+    const order = sq.order.length === 0 ? null : `ORDER BY ${sq.order.map((ob) => ob.field + printDirection(ob.direction))}`
+    const limit = sq.limit === null ? null : `LIMIT ${sq.limit}`
+    const offset = sq.offset === null ? null : `OFFSET ${sq.offset}`
+    /** @type { (string | null)[] } */
+    const allElements = [select, from, where, groupBy, order, limit, offset]
+    const string = allElements.filter(e => e !== null).map(e => `${indentStr}${e}\n`)
+        .reduce((prev, current) => `${prev}${current}`)
+    return string
+}
+
+// /**
+//  * @param { string } str
+//  * @returns { import("./Sql").SqlExpression }
+//  */
+export function path(str: string): SqlExpression {
+    return {
+        type: "path",
+        value: str
+    }
+}
+
+// /**
+//  * @template {any | Array<any>} T
+//  * @param {T} args
+//  * @returns { ( print: ((args: T, printSqlExpression: ((e: import("./Sql").SqlExpression) => string)) => string) ) => import("./Sql").AnyFormFunction }
+//  */
+export function anyFormFunction<T extends any | Array<any>>(args: T): ( print: ((args: T, printSqlExpression: ((e: SqlExpression) => string)) => string) ) => AnyFormFunction {
+    return (print) => {
+
+        // /** @type { (x: import("./walk").SqlExpression[]) => string } */
+        // @ts-ignore
+        const printTakingArray: (x: SqlExpression) => string = Array.isArray(args) ? print : (x) => print(x[0])
+        const argsArray = Array.isArray(args) ? args : [args]
+
+        // /** @type { import("./Sql").AnyFormFunction } */
+        const result: AnyFormFunction = {
+            type: "anyFormFunction",
+            // @ts-ignore
+            print: printTakingArray,
+            // @ts-ignore
+            args: argsArray
+        }
+        return result
+    }
+}
