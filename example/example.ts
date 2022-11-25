@@ -50,7 +50,7 @@ export const bookShop = it.api(
 
 // @ts-ignore
 const insp = (x) => inspect(x, true, null)
-const insp2 = (x) => JSON.stringify(x, undefined, 2)
+const insp2 = (x: any) => JSON.stringify(x, undefined, 2)
 // const selects = it.serve(bookShop, {  })
 const selects = it.serve(bookShop, { 
   // authors: { surname: true, user: {} } ,

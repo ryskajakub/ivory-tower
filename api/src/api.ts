@@ -110,6 +110,17 @@ export type Api<T> = {
     entities: T
 }
 
+export type Relation = Entity & {
+    type: RelationshipType,
+}
+
+export type Entity = {
+    relations?: Record<string, Relation>,
+    fields: Record<string, any>,
+}
+
+export type Entities = Record<string, Entity>
+
 export function api<Entities extends Record<string, any>, Relationships extends readonly AnyRelationship[]>(entities: Entities, mkRelationships: (entities: MkE<Entities>) => Relationships): Api<ExpandType<MkEnhancedEntities<Entities, Relationships>>> {
 
     const entitiesForRelationships = mapValues(entities, (value, key) => {

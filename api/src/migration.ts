@@ -1,4 +1,4 @@
-import { Api, RelationshipType } from "./api";
+import { Api, Entities, RelationshipType } from "./api";
 import { RevealSpec } from "./entity";
 import { plural } from "./plural";
 
@@ -39,11 +39,11 @@ type Table = {
 
 export function createMigrations(api: Api<any>): Table[] {
 
-    const tables: Table[] = Object.entries(api.entities).flatMap(([key, value]) => {
+    const tables: Table[] = Object.entries(api.entities as Entities).flatMap(([entityName, entity]) => {
 
-        const tableName = plural(key)
+        const tableName = plural(entityName)
 
-        const entityFields = Object.entries((value as any).fields).map(
+        const entityFields = Object.entries(entity.fields).map(
             ([fieldKey, value]) => {
 
                 const fieldSpec = (value as RevealSpec).getSpec()
@@ -64,7 +64,7 @@ export function createMigrations(api: Api<any>): Table[] {
             attributes: [{ name:  "id", argument: null }, { name: "default", argument: "autoincrement()"}]
         }
 
-        const [relationFields, relations, fkRelations, models] = Object.entries((value as any).relations).reduce<[Field[], Relation[], ForeignKeyRelation[], Table[]]>(
+        const [relationFields, relations, fkRelations, models] = Object.entries(entity.relations || []).reduce<[Field[], Relation[], ForeignKeyRelation[], Table[]]>(
             ([$relationFields, $relations, $fkRelations, $models], [toEntity, { type: relationType }]) => {
 
                 switch (relationType as RelationshipType) {
@@ -106,7 +106,7 @@ export function createMigrations(api: Api<any>): Table[] {
                             optional: false
                         }
                         const f1 = {
-                            name: `${key}_id`,
+                            name: `${entityName}_id`,
                             attributes: [],
                             type: "number",
                             nullable: false,
@@ -122,8 +122,8 @@ export function createMigrations(api: Api<any>): Table[] {
                             fields: [f1, f2],
                             relations: [],
                             fkRelations: [{
-                                name: plural(key),
-                                entity: key,
+                                name: plural(entityName),
+                                entity: entityName,
                                 relation: {
                                     fields: f1.name,
                                     references: "id"
@@ -141,7 +141,7 @@ export function createMigrations(api: Api<any>): Table[] {
                         return [$relationFields, [...$relations, relation3], $fkRelations, [...$models, model]]
                     case "reverseManyToMany":
                         const relation4: Relation = {
-                            entity: `${plural(toEntity)}_${key}`,
+                            entity: `${plural(toEntity)}_${entityName}`,
                             plural: true,
                             optional: false
                         }

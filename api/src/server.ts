@@ -1,19 +1,11 @@
 import { print } from "../../db/src/print";
 import { Field, FromItem, Join, Literal, Path, SelectQuery, selectQuery, SqlExpression, SqlFunction } from "../../db/src/syntax";
-import { Api, RelationshipType } from "./api";
+import { Api, Entities, Entity, RelationshipType } from "./api";
 import { plural } from "./plural";
 
 interface Request {
     [x: string]: true | Request
 }
-
-type Entity = {
-    relations?: Record<string, Entity>,
-    fields: Record<string, any>,
-    type?: RelationshipType
-}
-
-type Entities = Record<string, Entity>
 
 export function applyRequestKey(entityName: string, type: RelationshipType | undefined, request: Request): Request[] {
     const getPluralizedEntityKey = (): string => {
@@ -195,7 +187,7 @@ export function processEntity(outerEntityName: string, { fields, relations }: En
 export function serve<T>(api: Api<T>, request: Request) {
 
     const selects = Object.entries(api.entities as Entities).flatMap(([entityName, entity]) => {
-        const applied = applyRequestKey(entityName, entity.type, request)
+        const applied = applyRequestKey(entityName, undefined, request)
         return applied.map(outerEntityRequest => {
             const [jsonBuildFields, joinItems] = processEntity(entityName, entity, outerEntityRequest)
             const typeField: Field = {

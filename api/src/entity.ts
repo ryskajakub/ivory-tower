@@ -36,9 +36,9 @@ export type LeafSpec = NumberSpec | StringSpec
 
 export type Spec = RootSpec | LeafSpec
 
-export type Relation = {
-    relations: Record<string, string>
-}
+// export type Relation = {
+//     relations: Record<string, string>
+// }
 
 export type TypeLevel<T> = 
     T extends "string" ? string : "number"
