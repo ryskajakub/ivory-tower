@@ -1,7 +1,6 @@
 import { inspect } from "util";
 import * as it from "../api/src/index";
 import { Server } from "../api/src/server";
-import { print } from "../db/src/print";
 
 const book = {
   name: it.string,
@@ -64,16 +63,18 @@ const insp2 = (x: any) => JSON.stringify(x, undefined, 2);
 
 const server = new Server(bookShop);
 
-// const result = await server.call({
-//   users: { author: { name: true, surname: true } },
-//   reviews: {
-//     book: {
-//       isbn: true,
-//       authors: {
-//         surname: true
-//       }
-//     }
-//   }
-// });
+const result = await server.call({
+  users: { 
+    author: { name: true, surname: true } 
+  },
+  reviews: {
+    book: {
+      isbn: true,
+      authors: {
+        surname: true
+      }
+    }
+  }
+});
 
-// console.error(insp2(result));
+console.error(insp2(result));
