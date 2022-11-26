@@ -1,3 +1,4 @@
+import { Leaf, LeafSpec } from "./entity"
 import { mapValues } from "./helpers"
 import { ExpandType } from "./types"
 
@@ -108,12 +109,16 @@ export type Relation = Entity & {
     type: RelationshipType,
 }
 
+export type GetLeafSpec<T> = Pick<Leaf<T, any>, never>
+
 export type Entity = {
     relations?: Record<string, Relation>,
-    fields: Record<string, any>,
+    fields: Record<string, Pick<Leaf<any, any>, never>>,
 }
 
 export type Entities = Record<string, Entity>
+
+export type Entities2 = Record<string, Entity & { type?: RelationshipType }>
 
 export function api<Entities extends Record<string, any>, Relationships extends readonly AnyRelationship[]>(entities: Entities, mkRelationships: (entities: MkE<Entities>) => Relationships): Api<ExpandType<MkEnhancedEntities<Entities, Relationships>>> {
 

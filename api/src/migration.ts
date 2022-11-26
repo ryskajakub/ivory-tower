@@ -46,7 +46,7 @@ export function createMigrations(api: Api<any>): Table[] {
         const entityFields = Object.entries(entity.fields).map(
             ([fieldKey, value]) => {
 
-                const fieldSpec = (value as RevealSpec).getSpec()
+                const fieldSpec = (value as unknown as RevealSpec).getSpec()
 
                 const field: Field = {
                     name: fieldKey,

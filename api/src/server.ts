@@ -1,12 +1,69 @@
 import pgPromise from "pg-promise"
 import { ExpandType } from "../../util/src/types"
-import { Api, Entities } from "./api"
-import { RequestType, ReturnType } from "./client"
-import { Request, select } from "./query"
+import { Api, Entities, Entities2, RelationshipType } from "./api"
+import { Equality, Field, RequestType, ReturnType } from "./client"
+import { plural } from "./plural"
+import { EntityRequest, Request, select } from "./query"
 
 const connectionString = process.env["DATABASE_URL"] || ""
 
 const pg = pgPromise()(connectionString)
+
+export interface ThisEntityRequest {
+    select?: string[],
+    where?: (x: Record<string, Field<any>>) => Equality,
+    relations?: ThisRequest
+}
+
+export interface ThisRequest {
+    [x: string]: ThisEntityRequest
+}
+
+export function applyRequestKey(entityName: string, type: RelationshipType | undefined, request: ThisRequest): [string, ThisEntityRequest][] {
+    const getPluralizedEntityKey = (): string => {
+        switch(type) {
+            case "manyToMany": 
+            case "reverseManyToMany": 
+            case "oneToMany": 
+            case undefined: return plural(entityName)
+            default: return entityName
+        }
+    }
+    const pluralizedEntityKey = getPluralizedEntityKey()
+
+    if (request.hasOwnProperty(pluralizedEntityKey)) {
+        return [[pluralizedEntityKey, request[pluralizedEntityKey]]]
+    } else {
+        return []
+    }
+}
+
+function transformRequest(entities: Entities2, request: ThisRequest): Request {
+    const entries = Object.entries(entities).flatMap(([entityName, entity]) => {
+
+        return applyRequestKey(entityName, entity.type, request).map(([pluralizedKey, entityRequest]) => {
+            if (entityRequest.where) {
+                const fields = Object.fromEntries(Object.entries(entity.fields).map(([name,]) => [name, new Field(name)]))
+                const equality = entityRequest.where(fields)
+                const base = {
+                    ...entityRequest,
+                    where: equality,
+                }
+                if (entityRequest.relations === undefined || entity.relations === undefined) {
+                    return [pluralizedKey, base]
+                } else {
+                    return [pluralizedKey, {
+                        ...base,
+                        relations: transformRequest(entity.relations, entityRequest.relations)
+                    }]
+                }
+            } else {
+                return [pluralizedKey, entityRequest]
+            }
+        })
+    })
+    return Object.fromEntries(entries)
+}
 
 export class Server<T extends Entities> {
 
@@ -20,7 +77,14 @@ export class Server<T extends Entities> {
         } else {
 
             // @ts-ignore
-            const query = select(this.api, request)
+            const transformedRequest = transformRequest(this.api.entities, request)
+
+            // console.error("XXXXXXXXXXXXXX")
+            // console.error(JSON.stringify(transformedRequest, undefined, 2))
+            // console.error(JSON.stringify(request, undefined, 2))
+
+            // @ts-ignore
+            const query = select(this.api, transformedRequest)
 
             const result = await pg.oneOrNone(query)
 

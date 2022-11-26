@@ -1,6 +1,6 @@
 import axios from "axios";
-import { Api, Entities, RelationshipType } from "./api";
-import { Runtime } from "./entity";
+import { Api, Entities, Entity, GetLeafSpec, Relation, RelationshipType } from "./api";
+import { Leaf, LeafSpec, Runtime } from "./entity";
 import { IsTargetMany, Pluralify } from "./plural";
 import { ExpandType } from "./types";
 
@@ -8,58 +8,46 @@ export type EntityLike = {
     fields: Record<string, any>,
 }
 
-export type InnerRequestType<T extends EntityLike> = 
-    ExpandType<{
-        [K in keyof T["fields"]]?: true
-    } & (
-        "relations" extends keyof T ?
-            RequestType<T["relations"]> : {}
-    )>
-    
-type Nesting = "toplevel" | "inner"
-
-type Equality = {
-    type: "boolexpr"
-    args: any[]
+export type Equality = {
+    field: string,
+    literal: any
 }
 
-class Arg<A> {
+export class Field<RuntimeType> {
 
-    #arg;
+    constructor(private path: string) {}
 
-    constructor(arg: any) {
-        this.#arg = arg
-    }
-
-    "=" = (other: Runtime<A>): Equality => {
+    "=" = (lit: RuntimeType): Equality => {
         return {
-            type: "boolexpr",
-            args: [this, other]
+            field: this.path,
+            literal: lit
         }
     }
-
-    protected getArg = () => {
-        return this.#arg
-    }
 }
 
-type MakeWhereArgs<T> =
-    {
-        [K in keyof T]: Arg<T[K]>
-    } 
+type MkFields<T> = {
+    [K in keyof T]: T[K] extends GetLeafSpec<infer $Spec> ? Field<Runtime<$Spec>> : never
+}
 
-export type RequestType<T> =
+export type InnerRequestType<T extends Entity> = 
     {
-        [K in keyof T as Pluralify<K, "type" extends keyof T[K] ? (T[K]["type"] extends RelationshipType ? T[K]["type"] : null ) : null >]?: (
-            T[K] extends EntityLike ? ExpandType<InnerRequestType<T[K]>> : never
+        select?: (keyof T["fields"])[],
+        where?: (x: MkFields<T["fields"]>) => Equality
+    }
+    &
+    (
+        T extends Required<Entity> ?
+    {
+        relations?: RequestType<T["relations"]>
+    }
+    : {}
+    )
+
+export type RequestType<T extends Entities> =
+    {
+        [K in keyof T as Pluralify<K, T[K] extends Relation ? T[K]["type"] : null>]?: (
+            InnerRequestType<T[K]>
         ) 
-        
-        /*
-        | ($Nesting extends "toplevel" ? (T[K] extends EntityLike ? {
-            select: ExpandType<InnerRequestType<T[K]>>,
-            where: (filter: MakeWhereArgs<T[K]["fields"]>) => Equality
-        } :never ) : never )
-        */
     } 
 
 export type Quantify<Api, Wrapee> = 
