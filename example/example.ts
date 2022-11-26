@@ -64,16 +64,16 @@ const insp2 = (x: any) => JSON.stringify(x, undefined, 2);
 
 const server = new Server(bookShop);
 
-const result = await server.call({
-  users: { author: { name: true, surname: true } },
-  reviews: {
-    book: {
-      isbn: true,
-      authors: {
-        surname: true
-      }
-    }
-  }
-});
+// const result = await server.call({
+//   users: { author: { name: true, surname: true } },
+//   reviews: {
+//     book: {
+//       isbn: true,
+//       authors: {
+//         surname: true
+//       }
+//     }
+//   }
+// });
 
-console.log(insp2(result));
+// console.error(insp2(result));
