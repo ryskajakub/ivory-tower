@@ -37,6 +37,7 @@ export function print(sq: SelectQuery | SelectQuery[], indentParam?: number): st
 export function printSingle(sq: SelectQuery, indent: number): string {
 
     const indentStr = [...Array(indent).keys()].map(_ => "\t").reduce((prev, current) => `${prev}${current}`, "")
+
     const fields = sq.fields.map(field => printSqlExpression(field.expression) + (field.as === null ? "" : ` AS ${field.as}`))
         .reduce((prev, current) => `${prev}, ${current}`)
     const select = `SELECT ${fields}`
@@ -65,7 +66,7 @@ export function printSingle(sq: SelectQuery, indent: number): string {
         }
 
         const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + mkJoinKind(join.kind) + (` ON ${printSqlExpression(join.on)}`)).reduce((prev, current) => `${prev}${current}`, "")
-        return `${f1}${joins}`
+        return `${indentStr}${f1}${joins}`
     }).reduce((prev, current) => `${prev},\n${current}`)
 
     // /** @type {(direction: import("./Column").ColumnDirection) => string} */

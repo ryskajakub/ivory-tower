@@ -96,17 +96,11 @@ type MkEnhancedEntity<Key, Entity, AllEntities, Rels extends readonly any[]> =
         : never
     )
 
-// type PluralName<Name> = Name extends string ? `${Name}s` : Name
-
-// type Pluralify<Name, Type> = IsTargetMany<Type> extends true ? PluralName<Name> : Name
-
-export type IsTargetMany<Name> = Name extends `${infer Ignore}ToMany` ? true : false
-
 type MkEnhancedEntities<Entities, Relationships extends readonly any[]> = {
     [K in keyof Entities]: ExpandType<MkEnhancedEntity<K, Entities[K], Entities, Relationships>>
 }
 
-export type Api<T> = {
+export type Api<T extends Entities> = {
     entities: T
 }
 
