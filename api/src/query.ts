@@ -182,6 +182,17 @@ function joinType (type: RelationshipType): JoinType {
     }
 }
 
+function shouldGroup(type: RelationshipType): boolean {
+    switch (type) {
+        case "manyToOne": 
+        case "toOne": 
+        case "fromOne": return false
+        case "oneToMany":
+        case "manyToMany":
+        case "reverseManyToMany": return true
+    }
+}
+
 export function processEntity(outerEntityName: string, { fields, relations }: Entity, request: Request): [SqlExpression, Join[]] {
 
     const processedRelations = Object.entries(relations || []).flatMap(([innerEntityName, relationEntity]) => 
@@ -248,11 +259,11 @@ export function processEntity(outerEntityName: string, { fields, relations }: En
                 joins: [...relationJoins1, ...getManyToManyJoin()],
             }
 
-            const query = selectQuery({ froms: [fr1], as: tableAlias, fields: [idField, dataField], groupBy: [idFieldName] })
+            const query = selectQuery({ froms: [fr1], as: tableAlias, fields: [idField, dataField], groupBy: shouldGroup(relationEntity.type) ? [idFieldName] : [] })
             const join: Join = {
                 kind: {
                     type: "JoinQuery",
-                    query: query
+                    query,
                 },
                 type: joinType(relationEntity.type),
                 on: equality(`${tableAlias}.${innerFieldName}`, outerFieldName)

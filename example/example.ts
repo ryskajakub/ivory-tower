@@ -19,7 +19,7 @@ const author = {
 
 const user = {
   password: it.string,
-  handle: it.string
+  handle: it.string,
 };
 
 const genre = {
@@ -33,7 +33,6 @@ const entities = {
   user,
   genre,
 };
-
 
 export const bookShop = it.api(
   entities,
@@ -50,10 +49,10 @@ export const bookShop = it.api(
 // console.log(inspect(bookShop.entities, true, null))
 
 // @ts-ignore
-const insp = (x) => inspect(x, true, null)
-const insp2 = (x: any) => JSON.stringify(x, undefined, 2)
+const insp = (x) => inspect(x, true, null);
+const insp2 = (x: any) => JSON.stringify(x, undefined, 2);
 // const selects = it.serve(bookShop, {  })
-// const selects = it.serve(bookShop, { 
+// const selects = it.serve(bookShop, {
 //   authors: { surname: true, user: {} } ,
 //   users: { password: true, handle: true, author: {} } ,
 //   reviews: { text: true, book: { name: true } }
@@ -63,12 +62,18 @@ const insp2 = (x: any) => JSON.stringify(x, undefined, 2)
 //   books: { name: true, isbn: true, reviews: { text: true }, authors: { surname: true } }
 // })
 
-const server = new Server(bookShop)
+const server = new Server(bookShop);
 
-const result = await server.call({ users: { author: { } } })
-// const result = await server.call({ authors: { user: { } } })
-// const result = await server.call({ reviews: { book: { } } })
-// const result = await server.call({ books: { authors: { } }, authors: { books: {} } })
-// const result = await server.call({ genres: {} } )
+const result = await server.call({
+  users: { author: { name: true, surname: true } },
+  reviews: {
+    book: {
+      isbn: true,
+      authors: {
+        surname: true
+      }
+    }
+  }
+});
 
-console.log(insp2(result))
+console.log(insp2(result));

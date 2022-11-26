@@ -36,7 +36,8 @@ export function print(sq: SelectQuery | SelectQuery[], indentParam?: number): st
 
 export function printSingle(sq: SelectQuery, indent: number): string {
 
-    const indentStr = [...Array(indent).keys()].map(_ => "\t").reduce((prev, current) => `${prev}${current}`, "")
+    const mkIndentStr = (n: number) => [...Array(n).keys()].map(_ => "\t").reduce((prev, current) => `${prev}${current}`, "")
+    const indentStr = mkIndentStr(indent)
 
     const fields = sq.fields.map(field => printSqlExpression(field.expression) + (field.as === null ? "" : ` AS ${field.as}`))
         .reduce((prev, current) => `${prev}, ${current}`)
@@ -50,7 +51,7 @@ export function printSingle(sq: SelectQuery, indent: number): string {
                     return ` ${joinKind.tableName}` + (joinKind.as === null ? "" : ` AS ${joinKind.as}` )
                 case "JoinQuery":
                     const asClause = Array.isArray(joinKind.query) ? `` : ` AS ${joinKind.query.as}`
-                    return `(\n${print(joinKind.query, indent + 2)})${asClause}`
+                    return `(\n${print(joinKind.query, indent + 1)}${indentStr})${asClause}`
             }
         } 
 
