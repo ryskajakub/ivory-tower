@@ -65,7 +65,6 @@ const insp2 = (x: any) => JSON.stringify(x, undefined, 2)
 
 const server = new Server(bookShop)
 
-
 const result = await server.call({ users: { author: { } } })
 // const result = await server.call({ authors: { user: { } } })
 // const result = await server.call({ reviews: { book: { } } })
