@@ -64,19 +64,20 @@ const insp2 = (x: any) => JSON.stringify(x, undefined, 2);
 const server = new Server(bookShop);
 
 const result = await server.call({
-  users: {
-    select: ["handle", "password"],
-    where: (u) => u.handle["="]("nemcova"),
+  books: {
+    select: ["name"],
     relations: {
-      author: {
-        select: ["name", "surname"]
+      authors: {
+        select: ["surname"]
+      },
+      reviews: {
+        select: ["text"]
+      },
+      genres: {
+        select: ["name"]
       }
     }
-  }
+  },
 });
 
-// result.users.map(u => )
-
 console.error(insp2(result));
-
-// const prisma = new PrismaC

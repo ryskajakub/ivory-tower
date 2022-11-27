@@ -5,9 +5,15 @@ import { Equality, Field, RequestType, ReturnType } from "./client"
 import { plural } from "./plural"
 import { EntityRequest, Request, select } from "./query"
 
-const connectionString = process.env["DATABASE_URL"] || ""
+// const connectionString = process.env["DATABASE_URL"] || ""
 
-const pg = pgPromise()(connectionString)
+const pg = pgPromise()({
+    host: process.env["POSTGRES_HOST"] || "",
+    user: process.env["POSTGRES_USER"] || "",
+    database: process.env["POSTGRES_DB"] || "",
+    password: process.env["POSTGRES_PASSWORD"] || "",
+    encoding: "utf-8"
+})
 
 export interface ThisEntityRequest {
     select?: string[],
@@ -78,10 +84,6 @@ export class Server<T extends Entities> {
 
             // @ts-ignore
             const transformedRequest = transformRequest(this.api.entities, request)
-
-            // console.error("XXXXXXXXXXXXXX")
-            // console.error(JSON.stringify(transformedRequest, undefined, 2))
-            // console.error(JSON.stringify(request, undefined, 2))
 
             // @ts-ignore
             const query = select(this.api, transformedRequest)
