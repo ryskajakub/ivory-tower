@@ -91,3 +91,11 @@ This query will return this result:
   ]
 }
 ```
+
+## query builder
+
+Goals
+
+1. ability to run any query with correct type
+1. getting close to sql syntax
+1. refine types based on some expressions (indexes, outer joins, id fields ...)

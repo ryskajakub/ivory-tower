@@ -47,9 +47,6 @@ export const bookShop = it.api(
     ] as const
 );
 
-// const insp = (x) => inspect(x, true, null);
-// const insp2 = (x: any) => JSON.stringify(x, undefined, 2);
-
 const server = new Server(bookShop);
 
 const result = await server.call({
