@@ -58,19 +58,25 @@ export type Quantify<Api, Wrapee> =
     Array<Wrapee>
 
 export type EntityReturnType<Api, Request> =
-    Quantify<Api, ("fields" extends keyof Api ? {
-        [K in keyof Api["fields"] as GetKey<K, Request>]: 
+    Quantify<Api, ("fields" extends keyof Api ? ("select" extends keyof Request ? {
+        [K in keyof Api["fields"] as GetKeyArray<K, Request["select"]>]: 
             Runtime<Api["fields"][K]>
-    } : {})
+    } : Request) : Request)
     &
     ("relations" extends keyof Api ? 
-        ExpandType<ReturnType<Api["relations"], Request>>
+        (
+            "relations" extends keyof Request ?
+            ExpandType<ReturnType<Api["relations"], Request["relations"]>> :
+            {}
+        )
         : {}
     )>
 
 export type GetRequest<K, Request> = 
     Request extends true ? true :
     K extends keyof Request ? Request[K] : never
+
+export type GetKeyArray<K, Array> = Array extends (infer T)[] ? (K extends T ? K : never) : never
 
 export type GetKey<K, Request> = 
     Request extends true ? K :

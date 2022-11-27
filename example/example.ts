@@ -66,14 +66,16 @@ const server = new Server(bookShop);
 const result = await server.call({
   users: {
     select: ["handle", "password"],
+    where: (u) => u.handle["="]("nemcova"),
     relations: {
       author: {
-        select: ["surname"]
+        select: ["name", "surname"]
       }
-    },
-    where: (u) => u.handle["="]("nemcova")
+    }
   }
 });
+
+// result.users.map(u => )
 
 console.error(insp2(result));
 
