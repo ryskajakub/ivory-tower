@@ -66,7 +66,8 @@ const server = new Server(bookShop);
 
 const result = await server.call({
   books: {
-    select: ["name"],
+    mode: "object",
+    select: ["name", "id"],
     relations: {
       reviews: {
         select: ["text"]

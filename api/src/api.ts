@@ -1,5 +1,5 @@
 import { mapValues } from "../../util/src/helpers"
-import { Leaf, LeafSpec } from "./entity"
+import { Leaf, LeafSpec, number, NumberSpec } from "./entity"
 import { ExpandType } from "./types"
 
 export type RelationshipType = "manyToOne" | "oneToMany" | "manyToMany" | "toOne" | "fromOne" | "reverseManyToMany"
@@ -97,6 +97,10 @@ type MkEnhancedEntity<Key, Entity, AllEntities, Rels extends readonly any[]> =
         : never
     )
 
+type EntitiesWithId<Entities> = {
+    [K in keyof Entities]: Entities[K] & { id: Leaf<NumberSpec, never> }
+}
+
 type MkEnhancedEntities<Entities, Relationships extends readonly any[]> = {
     [K in keyof Entities]: ExpandType<MkEnhancedEntity<K, Entities[K], Entities, Relationships>>
 }
@@ -118,11 +122,19 @@ export type Entity = {
 
 export type Entities = Record<string, Entity>
 
-export type Entities2 = Record<string, Entity & { type?: RelationshipType }>
+export type InnerEntities = Record<string, Entity & { type?: RelationshipType }>
 
-export function api<Entities extends Record<string, any>, Relationships extends readonly AnyRelationship[]>(entities: Entities, mkRelationships: (entities: MkE<Entities>) => Relationships): Api<ExpandType<MkEnhancedEntities<Entities, Relationships>>> {
+export function api<Entities extends Record<string, any>, Relationships extends readonly AnyRelationship[]>(baseEntities: Entities, mkRelationships: (entities: MkE<Entities>) => Relationships): Api<ExpandType<MkEnhancedEntities<EntitiesWithId<Entities>, Relationships>>> {
 
-    const entitiesForRelationships = mapValues(entities, (value, key) => {
+    const entities = mapValues(baseEntities, (value, _key) => {
+        const fields = value as Record<string, Leaf<any, any>> 
+        return {
+            ...fields,
+            id: new Leaf(number)
+        }
+    })
+
+    const entitiesForRelationships = mapValues(entities, (_value, key) => {
         const entries = Object.fromEntries(allRelationshipTypes.map(relationshipType => [relationshipType, (other: any) => ({
             type: relationshipType,
             from: key,

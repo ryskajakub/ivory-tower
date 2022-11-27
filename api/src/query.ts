@@ -188,18 +188,17 @@ function getWhere(entity: Equality): SqlExpression {
 }
 
 function makeOuterDataFields(pluralizedInnerEntityName: string, relationEntityType: RelationshipType, tableAlias: string): SqlExpression[] {
+    const $key: SqlExpression = {
+        type: "literal",
+        dbType: null,
+        value: `'${pluralizedInnerEntityName}'`
+    }
+    const $value: SqlExpression = correctOuterData(relationEntityType, {
+        type: "path",
+        value: `${tableAlias}.data`
+    })
 
-            const $key: SqlExpression = {
-                type: "literal",
-                dbType: null,
-                value: `'${pluralizedInnerEntityName}'`
-            }
-            const $value: SqlExpression = correctOuterData(relationEntityType, {
-                type: "path",
-                value: `${tableAlias}.data`
-            })
-
-            return [$key, $value]
+    return [$key, $value]
 }
 
 function makeRelationJoin(relationEntityType: RelationshipType, tableAlias: string, outerEntityName: string, innerEntityName: string, innerRelationField: SqlExpression, innerRelations: Join[], innerEntityWhere: null | Equality): Join {

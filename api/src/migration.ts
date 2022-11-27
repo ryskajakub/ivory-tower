@@ -43,18 +43,23 @@ export function createMigrations(api: Api<any>): Table[] {
 
         const tableName = plural(entityName)
 
-        const entityFields = Object.entries(entity.fields).map(
+        const entityFields = Object.entries(entity.fields).flatMap(
             ([fieldKey, value]) => {
 
-                const fieldSpec = (value as unknown as RevealSpec).getSpec()
+                if (fieldKey === "id") {
+                    return []
+                } else {
 
-                const field: Field = {
-                    name: fieldKey,
-                    type: fieldSpec.type,
-                    nullable: fieldSpec.nullable === true,
-                    attributes: []
+                    const fieldSpec = (value as unknown as RevealSpec).getSpec()
+
+                    const field: Field = {
+                        name: fieldKey,
+                        type: fieldSpec.type,
+                        nullable: fieldSpec.nullable === true,
+                        attributes: []
+                    }
+                    return [field]
                 }
-                return field
             })
 
         const primaryField: Field = {

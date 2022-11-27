@@ -1,6 +1,6 @@
 import pgPromise from "pg-promise"
 import { ExpandType } from "../../util/src/types"
-import { Api, Entities, Entities2, RelationshipType } from "./api"
+import { Api, Entities, InnerEntities, RelationshipType } from "./api"
 import { Equality, Field, RequestType, ReturnType } from "./client"
 import { plural } from "./plural"
 import { EntityRequest, Request, select } from "./query"
@@ -44,7 +44,7 @@ export function applyRequestKey(entityName: string, type: RelationshipType | und
     }
 }
 
-function transformRequest(entities: Entities2, request: ThisRequest): Request {
+function transformRequest(entities: InnerEntities, request: ThisRequest): Request {
     const entries = Object.entries(entities).flatMap(([entityName, entity]) => {
 
         return applyRequestKey(entityName, entity.type, request).map(([pluralizedKey, entityRequest]) => {
