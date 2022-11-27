@@ -1,5 +1,6 @@
 import { inspect } from "util";
 import * as it from "../api/src/index";
+import { select } from "../api/src/query";
 import { Server } from "../api/src/server";
 
 const book = {
@@ -67,17 +68,17 @@ const result = await server.call({
   books: {
     select: ["name"],
     relations: {
-      authors: {
-        select: ["surname"]
-      },
       reviews: {
         select: ["text"]
       },
-      genres: {
-        select: ["name"]
-      }
     }
   },
+  reviews: {
+    relations: {
+      book: {
+        select: ["isbn"]
+      }
+    }
+  }
 });
-
-console.error(insp2(result));
+console.error(JSON.stringify(result, undefined, 2));

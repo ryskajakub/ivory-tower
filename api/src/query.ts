@@ -1,6 +1,7 @@
 import { match } from "assert";
 import { print, printSqlExpression } from "../../db/src/print";
 import { Field, FromItem, Join, JoinType, Literal, Path, SelectQuery, selectQuery, SqlExpression, SqlFunction } from "../../db/src/syntax";
+import { defaultMap, mapNull, mapValues, nullToArray, undefinedToNull } from "../../util/src/helpers";
 import { Api, Entities, Entity, RelationshipType } from "./api";
 import { Equality } from "./client";
 import { plural } from "./plural";
@@ -15,7 +16,9 @@ export interface Request {
     [x: string]: EntityRequest
 }
 
-export function applyRequestKey(entityName: string, type: RelationshipType | undefined, request: Request): [string, EntityRequest][] {
+let i = 0
+
+export function applyRequestKey(entityName: string, type: RelationshipType | undefined, request: Request): [string, EntityRequest] | null {
     const getPluralizedEntityKey = (): string => {
         switch(type) {
             case "manyToMany": 
@@ -28,9 +31,9 @@ export function applyRequestKey(entityName: string, type: RelationshipType | und
     const pluralizedEntityKey = getPluralizedEntityKey()
 
     if (request.hasOwnProperty(pluralizedEntityKey)) {
-        return [[pluralizedEntityKey, request[pluralizedEntityKey]]]
+        return [pluralizedEntityKey, request[pluralizedEntityKey]]
     } else {
-        return []
+        return null
     }
 }
 
@@ -64,7 +67,6 @@ function processFields(fields: Record<string, any>, request: string[], otherObje
     return buildObjectField
 
 } 
-let i = 0
 
 export function equality(path1: string, path2: string) {
     const bin: SqlExpression = {
@@ -122,44 +124,13 @@ function coalesce (expression: SqlExpression) : SqlExpression {
 
 function correctOuterData(type: RelationshipType, expression: SqlExpression): SqlExpression {
 
-    const nullToArray = () => {
-
-        const aggField = arrayAggregatedData(expression)
-
-        const caseExpression: SqlExpression = {
-            type: "anyFormFunction",
-            args: [{
-                type: "function",
-                name: "jsonb_typeof",
-                args: [aggField]
-            }, {
-                type: "literal",
-                value: "'null'",
-                dbType: null
-            }, {
-                type: "function",
-                name: "jsonb_build_array",
-                args: []
-            }, aggField],
-            print: ([obj, match, then, else1], printE) => {
-                return `CASE ${printE(obj)} WHEN ${printE(match)} THEN ${printE(then)} ELSE ${printE(else1)} END`
-            }
-        }
-
-        return caseExpression
-
-    }
-
     switch(type) {
-        // foreign key
         case "toOne":
         case "manyToOne": 
         case "fromOne": return expression
         case "oneToMany": 
         case "manyToMany":
         case "reverseManyToMany": return coalesce(expression)
-        // outer
-        // case null: return nullToArray()
     }
 
 }
@@ -216,92 +187,106 @@ function getWhere(entity: Equality): SqlExpression {
     }
 }
 
-export function processEntity(outerEntityName: string, { fields, relations }: Entity, request: EntityRequest): [SqlExpression, Join[]] {
-
-    const processedRelations = Object.entries(relations || []).flatMap(([innerEntityName, relationEntity]) => 
-
-        applyRequestKey(innerEntityName, relationEntity.type, request.relations || {}).map(([pluralizedInnerEntityName, innerEntityRequest]) => {
-
-            const [field, relationJoins1] = processEntity(innerEntityName, relationEntity, innerEntityRequest)
-
-            i = i + 1
-            const tableAlias = `t${i}`
+function makeOuterDataFields(pluralizedInnerEntityName: string, relationEntityType: RelationshipType, tableAlias: string): SqlExpression[] {
 
             const $key: SqlExpression = {
                 type: "literal",
                 dbType: null,
                 value: `'${pluralizedInnerEntityName}'`
             }
-            const $value: SqlExpression = correctOuterData(relationEntity.type, {
+            const $value: SqlExpression = correctOuterData(relationEntityType, {
                 type: "path",
                 value: `${tableAlias}.data`
             })
 
-            const [outerFieldName, innerFieldName] = getNames(relationEntity.type, outerEntityName, innerEntityName)
+            return [$key, $value]
+}
 
-            const idFieldName: Path = {
-                type: "path",
-                value: innerFieldName
-            }
+function makeRelationJoin(relationEntityType: RelationshipType, tableAlias: string, outerEntityName: string, innerEntityName: string, innerRelationField: SqlExpression, innerRelations: Join[], innerEntityWhere: null | Equality): Join {
+    const [outerFieldName, innerFieldName] = getNames(relationEntityType, outerEntityName, innerEntityName)
 
-            const idField: Field = {
-                expression: idFieldName,
-                as: null
-            }
-            const dataField: Field = {
-                expression: correctInnerData(relationEntity.type, field),
-                as: "data"
-            }
+    const idFieldName: Path = {
+        type: "path",
+        value: innerFieldName
+    }
 
-            const getManyToManyJoin = () => {
+    const idField: Field = {
+        expression: idFieldName,
+        as: null
+    }
+    const dataField: Field = {
+        expression: correctInnerData(relationEntityType, innerRelationField),
+        as: "data"
+    }
 
-                const manyToManyJoin = (table1: string, table2: string, inner: string, outer: string): Join => 
-                    ({
-                        kind: {
-                            type: "JoinTable",
-                            tableName: `${plural(table1)}_${plural(table2)}`,
-                            as: null
-                        },
-                        type: "inner",
-                        on: equality("id", `${inner}_id`)
-                    })
+    const getManyToManyJoin = () => {
 
-                switch(relationEntity.type) {
-                    case "manyToMany": return [manyToManyJoin(outerEntityName, innerEntityName, innerEntityName, outerEntityName)]
-                    case "reverseManyToMany": return [manyToManyJoin(innerEntityName, outerEntityName, innerEntityName, outerEntityName)]
-                    default: return []
-                } 
-            }
-
-            const fr1: FromItem = {
-                from: {
+        const manyToManyJoin = (table1: string, table2: string, inner: string): Join => 
+            ({
+                kind: {
                     type: "JoinTable",
-                    tableName: plural(innerEntityName),
+                    tableName: `${plural(table1)}_${plural(table2)}`,
                     as: null
                 },
-                joins: [...relationJoins1, ...getManyToManyJoin()],
-            }
-
-            const query = selectQuery({ 
-                froms: [fr1], 
-                as: tableAlias, 
-                fields: [idField, dataField], 
-                where: innerEntityRequest.where !== undefined ? getWhere(innerEntityRequest.where) : null,
-                groupBy: shouldGroup(relationEntity.type) ? [idFieldName] : [],
+                type: "inner",
+                on: equality("id", `${inner}_id`)
             })
-            const join: Join = {
-                kind: {
-                    type: "JoinQuery",
-                    query,
-                },
-                type: joinType(relationEntity.type),
-                on: equality(`${tableAlias}.${innerFieldName}`, outerFieldName)
-            } 
 
-            const ret: [SqlExpression[], Join] = [[$key, $value], join]
-            return ret
-        })
-    )
+        switch(relationEntityType) {
+            case "manyToMany": return [manyToManyJoin(outerEntityName, innerEntityName, innerEntityName)]
+            case "reverseManyToMany": return [manyToManyJoin(innerEntityName, outerEntityName, innerEntityName)]
+            default: return []
+        } 
+    }
+
+    const fr1: FromItem = {
+        from: {
+            type: "JoinTable",
+            tableName: plural(innerEntityName),
+            as: null
+        },
+        joins: [...innerRelations, ...getManyToManyJoin()],
+    }
+
+    const query = selectQuery({ 
+        froms: [fr1], 
+        as: tableAlias, 
+        fields: [idField, dataField], 
+        where: innerEntityWhere !== null ? getWhere(innerEntityWhere) : null,
+        groupBy: shouldGroup(relationEntityType) ? [idFieldName] : [],
+    })
+    const join: Join = {
+        kind: {
+            type: "JoinQuery",
+            query,
+        },
+        type: joinType(relationEntityType),
+        on: equality(`${tableAlias}.${innerFieldName}`, outerFieldName)
+    } 
+    return join
+}
+
+export function processEntity(outerEntityName: string, { fields, relations }: Entity, request: EntityRequest): [SqlExpression, Join[]] {
+
+    const processedRelations = Object.entries(relations || []).flatMap(([innerEntityName, relationEntity]) => {
+
+        const appliedRequestKey = applyRequestKey(innerEntityName, relationEntity.type, request.relations || {})
+
+        return defaultMap(appliedRequestKey, [], (([pluralizedInnerEntityName, innerEntityRequest]) => {
+
+            const [innerRelationField, relationJoins1] = processEntity(innerEntityName, relationEntity, innerEntityRequest)
+
+            i = i + 1
+            const tableAlias = `t${i}`
+
+            const outerDataField = makeOuterDataFields(pluralizedInnerEntityName, relationEntity.type, tableAlias)
+
+            const join = makeRelationJoin(relationEntity.type, tableAlias, outerEntityName, innerEntityName, innerRelationField, relationJoins1, undefinedToNull(innerEntityRequest.where))
+
+            const ret: [SqlExpression[], Join] = [outerDataField, join]
+            return [ret]
+        }))
+    })
     const relationFields = processedRelations.flatMap(([fields, ]) => fields)
     const relationJoins = processedRelations.map(([, join]) => join)
 
@@ -313,7 +298,7 @@ export function select<T extends Entities>(api: Api<T>, request: Request) {
 
     const selects = Object.entries(api.entities as Entities).flatMap(([entityName, entity]) => {
         const applied = applyRequestKey(entityName, undefined, request)
-        return applied.map(([pluralizedName, outerEntityRequest]) => {
+        return defaultMap(applied, [], (([pluralizedName, outerEntityRequest]) => {
             const [jsonBuildFields, joinItems] = processEntity(entityName, entity, outerEntityRequest)
             const typeField: Field = {
                 expression: {
@@ -337,8 +322,8 @@ export function select<T extends Entities>(api: Api<T>, request: Request) {
                 joins: joinItems
             }
             const select = selectQuery({ froms: [from], fields: [typeField, field], where: outerEntityRequest.where === undefined ? null : getWhere(outerEntityRequest.where) })
-            return select
-        })
+            return [select]
+        }))
     })
 
     i += 1

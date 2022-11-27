@@ -1,5 +1,5 @@
+import { mapValues } from "../../util/src/helpers"
 import { Leaf, LeafSpec } from "./entity"
-import { mapValues } from "./helpers"
 import { ExpandType } from "./types"
 
 export type RelationshipType = "manyToOne" | "oneToMany" | "manyToMany" | "toOne" | "fromOne" | "reverseManyToMany"
