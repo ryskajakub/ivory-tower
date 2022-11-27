@@ -9,7 +9,8 @@ import { plural } from "./plural";
 export interface EntityRequest {
     select?: string[],
     where?: Equality,
-    relations?: Request
+    relations?: Request,
+    mode?: "object"
 }
 
 export interface Request {
@@ -95,15 +96,27 @@ export function getNames(type: RelationshipType, outerEntityName: string, innerE
     }
 }
 
-function arrayAggregatedData(buildObjectField: SqlExpression): SqlExpression {
-    const dataAggField: SqlFunction = {
-        type: "function",
-        name: "JSONB_AGG",
-        args: [
-            buildObjectField
-        ]
+function arrayAggregatedData(buildObjectField: SqlExpression, idFieldName: null | SqlExpression): SqlExpression {
+    if (idFieldName === null) {
+        const arrayAggField: SqlFunction = {
+            type: "function",
+            name: "JSONB_AGG",
+            args: [
+                buildObjectField
+            ]
+        }
+        return arrayAggField
+    } else {
+        const objectAggField: SqlFunction = {
+            type: "function",
+            name: "JSONB_OBJECT_AGG",
+            args: [
+                idFieldName,
+                buildObjectField
+            ]
+        }
+        return objectAggField
     }
-    return dataAggField
 }
 
 function coalesce (expression: SqlExpression) : SqlExpression {
@@ -135,7 +148,7 @@ function correctOuterData(type: RelationshipType, expression: SqlExpression): Sq
 
 }
 
-export function correctInnerData(type: RelationshipType | null, expression: SqlExpression): SqlExpression {
+export function correctInnerData(type: RelationshipType | null, expression: SqlExpression, idFieldName: SqlExpression | null): SqlExpression {
     switch(type) {
         case "fromOne": 
         case "toOne":
@@ -143,7 +156,7 @@ export function correctInnerData(type: RelationshipType | null, expression: SqlE
         case null:
         case "manyToMany":
         case "reverseManyToMany":
-        case "oneToMany": return arrayAggregatedData(expression)
+        case "oneToMany": return arrayAggregatedData(expression, idFieldName)
     }
 }
 
@@ -201,7 +214,7 @@ function makeOuterDataFields(pluralizedInnerEntityName: string, relationEntityTy
     return [$key, $value]
 }
 
-function makeRelationJoin(relationEntityType: RelationshipType, tableAlias: string, outerEntityName: string, innerEntityName: string, innerRelationField: SqlExpression, innerRelations: Join[], innerEntityWhere: null | Equality): Join {
+function makeRelationJoin(relationEntityType: RelationshipType, tableAlias: string, outerEntityName: string, innerEntityName: string, innerRelationField: SqlExpression, innerRelations: Join[], innerEntityWhere: null | Equality, mode: "object" | null): Join {
     const [outerFieldName, innerFieldName] = getNames(relationEntityType, outerEntityName, innerEntityName)
 
     const idFieldName: Path = {
@@ -214,7 +227,7 @@ function makeRelationJoin(relationEntityType: RelationshipType, tableAlias: stri
         as: null
     }
     const dataField: Field = {
-        expression: correctInnerData(relationEntityType, innerRelationField),
+        expression: correctInnerData(relationEntityType, innerRelationField, mode === "object" ? idFieldName : null),
         as: "data"
     }
 
@@ -280,7 +293,7 @@ export function processEntity(outerEntityName: string, { fields, relations }: En
 
             const outerDataField = makeOuterDataFields(pluralizedInnerEntityName, relationEntity.type, tableAlias)
 
-            const join = makeRelationJoin(relationEntity.type, tableAlias, outerEntityName, innerEntityName, innerRelationField, relationJoins1, undefinedToNull(innerEntityRequest.where))
+            const join = makeRelationJoin(relationEntity.type, tableAlias, outerEntityName, innerEntityName, innerRelationField, relationJoins1, undefinedToNull(innerEntityRequest.where), undefinedToNull(innerEntityRequest.mode))
 
             const ret: [SqlExpression[], Join] = [outerDataField, join]
             return [ret]
@@ -307,9 +320,12 @@ export function select<T extends Entities>(api: Api<T>, request: Request) {
                 },
                 as: "type"
             }
-
+            const idExpression: SqlExpression = {
+                type: "path",
+                value: `id`
+            }
             const field: Field = {
-                expression: coalesce(arrayAggregatedData(jsonBuildFields)),
+                expression: coalesce(arrayAggregatedData(jsonBuildFields, outerEntityRequest.mode === undefined ? null : idExpression)),
                 as: "data"
             } 
             const from: FromItem = {

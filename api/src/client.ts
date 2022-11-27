@@ -32,7 +32,8 @@ type MkFields<T> = {
 export type InnerRequestType<T extends Entity> = 
     {
         select?: (keyof T["fields"])[],
-        where?: (x: MkFields<T["fields"]>) => Equality
+        where?: (x: MkFields<T["fields"]>) => Equality,
+        mode?: "object"
     }
     &
     (
@@ -45,32 +46,33 @@ export type InnerRequestType<T extends Entity> =
 
 export type RequestType<T extends Entities> =
     {
-        [K in keyof T as Pluralify<K, T[K] extends Relation ? T[K]["type"] : null>]?: (
-            InnerRequestType<T[K]>
-        ) 
-    } 
+        [K in keyof T as Pluralify<K, T[K] extends Relation ? T[K]["type"] : null>]?: InnerRequestType<T[K]> 
+    }
 
-export type Quantify<Api, Wrapee> = 
-    "type" extends keyof Api ?
-    (IsTargetMany<Api["type"]> extends true ? Array<Wrapee> : 
-        Api["type"] extends "fromOne" ? Wrapee | null : Wrapee
+export type ArrayOrObject<$Entity, Wrapee, Request> = 
+    "mode" extends keyof Request ? Record<number, Wrapee> : Array<Wrapee>
+
+export type Quantify<$Entity, Wrapee, Request> = 
+    "type" extends keyof $Entity ?
+    (IsTargetMany<$Entity["type"]> extends true ? ArrayOrObject<$Entity, Wrapee, Request> : 
+        $Entity["type"] extends "fromOne" ? Wrapee | null : Wrapee
     ) :
-    Array<Wrapee>
+    ArrayOrObject<$Entity, Wrapee, Request>
 
-export type EntityReturnType<Api, Request> =
-    Quantify<Api, ("fields" extends keyof Api ? ("select" extends keyof Request ? {
-        [K in keyof Api["fields"] as GetKeyArray<K, Request["select"]>]: 
-            Runtime<Api["fields"][K]>
+export type EntityReturnType<$Entity, Request> =
+    Quantify<$Entity, ("fields" extends keyof $Entity ? ("select" extends keyof Request ? {
+        [K in keyof $Entity["fields"] as GetKeyArray<K, Request["select"]>]: 
+            Runtime<$Entity["fields"][K]>
     } : Request) : Request)
     &
-    ("relations" extends keyof Api ? 
+    ("relations" extends keyof $Entity ? 
         (
             "relations" extends keyof Request ?
-            ExpandType<ReturnType<Api["relations"], Request["relations"]>> :
+            ExpandType<ReturnType<$Entity["relations"], Request["relations"]>> :
             {}
         )
         : {}
-    )>
+    ), Request>
 
 export type GetRequest<K, Request> = 
     Request extends true ? true :

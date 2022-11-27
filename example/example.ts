@@ -67,19 +67,19 @@ const server = new Server(bookShop);
 const result = await server.call({
   books: {
     mode: "object",
-    select: ["name", "id"],
+    select: ["name", "isbn"],
     relations: {
       reviews: {
         select: ["text"]
       },
     }
   },
-  reviews: {
-    relations: {
-      book: {
-        select: ["isbn"]
-      }
-    }
-  }
+  // reviews: {
+  //   relations: {
+  //     book: {
+  //       select: ["isbn"]
+  //     }
+  //   }
+  // }
 });
 console.error(JSON.stringify(result, undefined, 2));
