@@ -3,6 +3,8 @@ import * as it from "../api/src/index";
 import { select } from "../api/src/query";
 import { Server } from "../api/src/server";
 
+import { PrismaClient } from '@prisma/client'
+
 const book = {
   name: it.string,
   isbn: it.string.nullable(),
@@ -45,22 +47,8 @@ export const bookShop = it.api(
     ] as const
 );
 
-// console.log("inspected")
-// console.log(inspect(bookShop.entities, true, null))
-
-// @ts-ignore
-const insp = (x) => inspect(x, true, null);
-const insp2 = (x: any) => JSON.stringify(x, undefined, 2);
-// const selects = it.serve(bookShop, {  })
-// const selects = it.serve(bookShop, {
-//   authors: { surname: true, user: {} } ,
-//   users: { password: true, handle: true, author: {} } ,
-//   reviews: { text: true, book: { name: true } }
-//   books: { name: true, reviews: {} }
-//   books: { name: true, authors: { name: true, user: {} }, reviews: { text: true } }
-//   authors: { name: true, books: { isbn: true, name: true} },
-//   books: { name: true, isbn: true, reviews: { text: true }, authors: { surname: true } }
-// })
+// const insp = (x) => inspect(x, true, null);
+// const insp2 = (x: any) => JSON.stringify(x, undefined, 2);
 
 const server = new Server(bookShop);
 
@@ -84,4 +72,5 @@ const result = await server.call({
     }
   }
 });
+
 console.error(JSON.stringify(result, undefined, 2));
