@@ -29,19 +29,29 @@ type MkFields<T> = {
     [K in keyof T]: T[K] extends GetLeafSpec<infer $Spec> ? Field<Runtime<$Spec>> : never
 }
 
+type IsSingular<T extends RelationshipType> = 
+    T extends "manyToOne" ? true : 
+    T extends "toOne" ? true :
+    T extends "fromOne" ? true : false
+
+type PluralType<T extends Entity> = {
+    where?: (x: MkFields<T["fields"]>) => Equality,
+    mode?: "object"
+}
+
 export type InnerRequestType<T extends Entity> = 
     {
         select?: (keyof T["fields"])[],
-        where?: (x: MkFields<T["fields"]>) => Equality,
-        mode?: "object"
-    }
-    &
+    } & 
     (
         T extends Required<Entity> ?
-    {
-        relations?: RequestType<T["relations"]>
-    }
-    : {}
+        { relations?: RequestType<T["relations"]> } : 
+        {}
+    ) &
+    (
+        T extends Relation ? 
+        ( IsSingular<T["type"]> extends true ? {} : PluralType<T> ) :
+        PluralType<T>
     )
 
 export type RequestType<T extends Entities> =
@@ -60,7 +70,7 @@ export type Quantify<$Entity, Wrapee, Request> =
     ArrayOrObject<$Entity, Wrapee, Request>
 
 export type EntityReturnType<$Entity, Request> =
-    Quantify<$Entity, ("fields" extends keyof $Entity ? ("select" extends keyof Request ? {
+    Quantify<$Entity, ExpandType<("fields" extends keyof $Entity ? ("select" extends keyof Request ? {
         [K in keyof $Entity["fields"] as GetKeyArray<K, Request["select"]>]: 
             Runtime<$Entity["fields"][K]>
     } : Request) : Request)
@@ -72,7 +82,7 @@ export type EntityReturnType<$Entity, Request> =
             {}
         )
         : {}
-    ), Request>
+    )>, Request>
 
 export type GetRequest<K, Request> = 
     Request extends true ? true :
@@ -89,14 +99,14 @@ export type GetRelationshipType<$Entity> =
 
 export type ReturnType<$Entities, Request> = {
     [K in keyof $Entities as GetKey<Pluralify<K, GetRelationshipType<$Entities[K]>>, Request>]:
-        ExpandType<EntityReturnType<$Entities[K], GetRequest<Pluralify<K, GetRelationshipType<$Entities[K]>>, Request>>>
+        EntityReturnType<$Entities[K], GetRequest<Pluralify<K, GetRelationshipType<$Entities[K]>>, Request>>
 }
 
 export type Check<T> = {
     [K in keyof T]: Check<T[K]>
 }
 
-export async function call<T extends Entities, X extends RequestType<T>>(api: Api<T>, request: X): Promise<ExpandType<ReturnType<T, X>>> {
+export async function call<T extends Entities, X extends RequestType<T>>(api: Api<T>, request: X): Promise<ReturnType<T, X>> {
     const response = await axios.post<ReturnType<T, X>>(`http://localhost:6000/graph`, request) 
     return response.data
 }

@@ -68,18 +68,20 @@ const result = await server.call({
   books: {
     mode: "object",
     select: ["name", "isbn"],
+    where: (x) => x.name["="]("Padesát odstínů šedi"),
     relations: {
       reviews: {
+        mode: "object",
         select: ["text"]
       },
     }
   },
-  // reviews: {
-  //   relations: {
-  //     book: {
-  //       select: ["isbn"]
-  //     }
-  //   }
-  // }
+  reviews: {
+    relations: {
+      book: {
+        select: ["isbn"],
+      }
+    }
+  }
 });
 console.error(JSON.stringify(result, undefined, 2));
