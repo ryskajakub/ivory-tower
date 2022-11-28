@@ -1,5 +1,6 @@
 import { ExpandType } from "./types"
 
+
 export type NumberSpec = {
     type: "number"
 }
