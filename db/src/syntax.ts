@@ -2,7 +2,36 @@ import { TupleToUnion } from "../../util/src/types"
 
 export type ColumnDirection = "default" | "ASC" | "DESC"
 
-export type JoinType = "left" | "inner"
+// export type JoinType = "left" | "inner" | "right" | "full"
+export type JoinType = "inner"
+
+export type Using = {
+    type: "using",
+    joinColumns: string[],
+}
+
+export type On = {
+    type: "on",
+    expression: SqlExpression,
+}
+
+export type Clause = Using | On
+
+export type ClauseJoin = {
+    kind: "clause",
+    type: JoinType,
+    clause: On,
+    as: string | null,
+}
+
+export type Natural = {
+    kind: "natural",
+    type: JoinType
+}
+
+export type Cross = { type: "cross" } 
+
+export type JoinKind = ClauseJoin | Natural | Cross
 
 export const CharOperators = ["=", ">=", "<>", "<=", ">", "<"] as const;
 
@@ -10,28 +39,27 @@ export type CharOperator = TupleToUnion<typeof CharOperators>
 export type WordOperator = "AND" | "OR" | "IN"
 export type Operator = CharOperator | WordOperator
 
-export type JoinTable = {
+export type FromTable = {
     type: "JoinTable",
     tableName: string,
     as: string | null
 }
 
-export type JoinQuery = {
+export type FromQuery = {
     type: "JoinQuery",
     query: SelectQuery | SelectQuery[],
 }
 
-export type JoinKind = JoinTable | JoinQuery
+export type FromSource = FromTable | FromQuery
 
-export type Join = Readonly<{
-    kind: JoinKind,
-    on: SqlExpression,
-    type: JoinType,
+export type JoinSyntax = Readonly<{
+    source: FromSource,
+    kind: ClauseJoin,
 }>
 
 export type FromItem = Readonly<{
-    from: JoinKind,
-    joins: readonly Join[],
+    from: FromSource,
+    joins: readonly JoinSyntax[],
 }>
 
 export type Field = Readonly<{
@@ -51,8 +79,7 @@ export type SelectQuery = Readonly<{
     fields: readonly Field[],
     order: readonly Order[]
     limit: number | null,
-    offset: number | null,
-    as: string | null, 
+    offset: number | null
 }>
 
 export function selectQuery(obj: Partial<SelectQuery>) {
@@ -64,7 +91,6 @@ export function selectQuery(obj: Partial<SelectQuery>) {
         order: [],
         limit: null,
         offset: null,
-        as: null, 
         ...obj
     }
     return q

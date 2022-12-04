@@ -1,8 +1,8 @@
 import axios from "axios";
+import { ExpandType } from "../../util/src/types";
 import { Api, Entities, Entity, GetLeafSpec, Relation, RelationshipType } from "./api";
 import { Leaf, LeafSpec, Runtime } from "./entity";
 import { IsTargetMany, Pluralify } from "./plural";
-import { ExpandType } from "./types";
 
 export type EntityLike = {
     fields: Record<string, any>,

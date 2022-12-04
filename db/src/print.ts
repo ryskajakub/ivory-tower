@@ -1,4 +1,5 @@
-import { AnyFormFunction, ColumnDirection, JoinKind, JoinType, Operator, SelectQuery, SqlExpression } from "./syntax"
+// @ts-nocheck
+import { AnyFormFunction, ColumnDirection, FromSource, JoinType, Operator, SelectQuery, SqlExpression } from "./syntax"
 
 export function printSqlExpression(condition: SqlExpression) {
 
@@ -45,7 +46,7 @@ export function printSingle(sq: SelectQuery, indent: number): string {
     const fromItems = sq.froms.map(fi => {
 
         // /** @type {(joinKind: import("./Sql").JoinKind) => string } */
-        const mkJoinKind = (joinKind: JoinKind): string => {
+        const mkJoinKind = (joinKind: FromSource): string => {
             switch (joinKind.type) {
                 case "JoinTable": 
                     return ` ${joinKind.tableName}` + (joinKind.as === null ? "" : ` AS ${joinKind.as}` )
@@ -66,7 +67,7 @@ export function printSingle(sq: SelectQuery, indent: number): string {
             }
         }
 
-        const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + mkJoinKind(join.kind) + (` ON ${printSqlExpression(join.on)}`)).reduce((prev, current) => `${prev}${current}`, "")
+        const joins = fi.joins.map(join => "\n" + indentStr + "\t" + printJoinType(join.type) + mkJoinKind(join.source) + (` ON ${printSqlExpression(join.on)}`)).reduce((prev, current) => `${prev}${current}`, "")
         return `${indentStr}${f1}${joins}`
     }).reduce((prev, current) => `${prev},\n${current}`)
 

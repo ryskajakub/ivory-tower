@@ -1,6 +1,6 @@
 import { mapValues } from "../../util/src/helpers"
+import { ExpandType } from "../../util/src/types"
 import { Leaf, LeafSpec, number, NumberSpec } from "./entity"
-import { ExpandType } from "./types"
 
 export type RelationshipType = "manyToOne" | "oneToMany" | "manyToMany" | "toOne" | "fromOne" | "reverseManyToMany"
 
@@ -113,11 +113,11 @@ export type Relation = Entity & {
     type: RelationshipType,
 }
 
-export type GetLeafSpec<T> = Pick<Leaf<T, any>, never>
+export type GetLeafSpec<T extends { type: any }> = Pick<Leaf<T, any>, "spec">
 
 export type Entity = {
     relations?: Record<string, Relation>,
-    fields: Record<string, Pick<Leaf<any, any>, never>>,
+    fields: Record<string, GetLeafSpec<any>>,
 }
 
 export type Entities = Record<string, Entity>
@@ -130,7 +130,7 @@ export function api<Entities extends Record<string, any>, Relationships extends 
         const fields = value as Record<string, Leaf<any, any>> 
         return {
             ...fields,
-            id: new Leaf(number)
+            id: number
         }
     })
 

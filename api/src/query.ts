@@ -1,6 +1,6 @@
-import { match } from "assert";
+// @ts-nocheck
 import { print, printSqlExpression } from "../../db/src/print";
-import { Field, FromItem, Join, JoinType, Literal, Path, SelectQuery, selectQuery, SqlExpression, SqlFunction } from "../../db/src/syntax";
+import { Field, FromItem, JoinSyntax, JoinType, Literal, Path, SelectQuery, selectQuery, SqlExpression, SqlFunction } from "../../db/src/syntax";
 import { defaultMap, mapNull, mapValues, nullToArray, undefinedToNull } from "../../util/src/helpers";
 import { Api, Entities, Entity, RelationshipType } from "./api";
 import { Equality } from "./client";
@@ -214,7 +214,7 @@ function makeOuterDataFields(pluralizedInnerEntityName: string, relationEntityTy
     return [$key, $value]
 }
 
-function makeRelationJoin(relationEntityType: RelationshipType, tableAlias: string, outerEntityName: string, innerEntityName: string, innerRelationField: SqlExpression, innerRelations: Join[], innerEntityWhere: null | Equality, mode: "object" | null): Join {
+function makeRelationJoin(relationEntityType: RelationshipType, tableAlias: string, outerEntityName: string, innerEntityName: string, innerRelationField: SqlExpression, innerRelations: JoinSyntax[], innerEntityWhere: null | Equality, mode: "object" | null): JoinSyntax {
     const [outerFieldName, innerFieldName] = getNames(relationEntityType, outerEntityName, innerEntityName)
 
     const idFieldName: Path = {
@@ -233,9 +233,9 @@ function makeRelationJoin(relationEntityType: RelationshipType, tableAlias: stri
 
     const getManyToManyJoin = () => {
 
-        const manyToManyJoin = (table1: string, table2: string, inner: string): Join => 
+        const manyToManyJoin = (table1: string, table2: string, inner: string): JoinSyntax => 
             ({
-                kind: {
+                source: {
                     type: "JoinTable",
                     tableName: `${plural(table1)}_${plural(table2)}`,
                     as: null
@@ -267,8 +267,8 @@ function makeRelationJoin(relationEntityType: RelationshipType, tableAlias: stri
         where: innerEntityWhere !== null ? getWhere(innerEntityWhere) : null,
         groupBy: shouldGroup(relationEntityType) ? [idFieldName] : [],
     })
-    const join: Join = {
-        kind: {
+    const join: JoinSyntax = {
+        source: {
             type: "JoinQuery",
             query,
         },
@@ -278,7 +278,7 @@ function makeRelationJoin(relationEntityType: RelationshipType, tableAlias: stri
     return join
 }
 
-export function processEntity(outerEntityName: string, { fields, relations }: Entity, request: EntityRequest): [SqlExpression, Join[]] {
+export function processEntity(outerEntityName: string, { fields, relations }: Entity, request: EntityRequest): [SqlExpression, JoinSyntax[]] {
 
     const processedRelations = Object.entries(relations || []).flatMap(([innerEntityName, relationEntity]) => {
 
@@ -295,7 +295,7 @@ export function processEntity(outerEntityName: string, { fields, relations }: En
 
             const join = makeRelationJoin(relationEntity.type, tableAlias, outerEntityName, innerEntityName, innerRelationField, relationJoins1, undefinedToNull(innerEntityRequest.where), undefinedToNull(innerEntityRequest.mode))
 
-            const ret: [SqlExpression[], Join] = [outerDataField, join]
+            const ret: [SqlExpression[], JoinSyntax] = [outerDataField, join]
             return [ret]
         }))
     })

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Api, Entities, RelationshipType } from "./api";
 import { RevealSpec } from "./entity";
 import { plural } from "./plural";

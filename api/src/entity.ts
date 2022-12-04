@@ -1,6 +1,3 @@
-import { ExpandType } from "./types"
-
-
 export type NumberSpec = {
     type: "number"
 }
@@ -37,24 +34,9 @@ export type LeafSpec = NumberSpec | StringSpec
 
 export type Spec = RootSpec | LeafSpec
 
-export type TypeLevel<T> = 
-    T extends "string" ? string : "number"
+export class Leaf<$Spec extends { type: any }, OmittedMethods extends never | 'nullable' | 'optional' = never>  {
 
-export class HasSpec<$Spec> {
-    private spec;
-    constructor(spec: $Spec) {
-        this.spec = spec
-    }
-    protected getSpec = () => {
-        return this.spec
-    }
-}
-
-export class Leaf<$Spec, OmittedMethods extends never | 'nullable' | 'optional' = never> extends HasSpec<$Spec> {
-
-    constructor(spec: $Spec) {
-        super(spec)
-    }
+    constructor(public spec: $Spec) { }
 
     nullable = (): Omit<Leaf<$Spec & { nullable: true }, 'nullable'>, 'nullable' | OmittedMethods> => {
         // @ts-ignore
@@ -68,19 +50,13 @@ export class Leaf<$Spec, OmittedMethods extends never | 'nullable' | 'optional' 
 
 }
 
-export class RevealSpec extends HasSpec<any> {
-    getSpec = () => { 
-        return super.getSpec()
-    }
-}
-
 export const number = new Leaf({
-    type: "number",
+    type: "number" as const, 
 })
 
 export const string = new Leaf({
-    type: "string"
+    type: "string" as const
 })
 
-export type Runtime<T> = 
-    (T extends NumberSpec ? number : string) | ( T extends Nullable ? null : never)
+export type Runtime<T> = T
+    // (T extends NumberSpec ? number : string) | ( T extends Nullable ? null : never)
