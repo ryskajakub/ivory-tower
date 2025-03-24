@@ -1,0 +1,21 @@
+version: "3"
+
+volumes:
+  db-data:
+  db-copy-data:
+
+services:
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: db
+      POSTGRES_USER: db
+    ports:
+      - 7777:5432
+  
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 7778:8080
