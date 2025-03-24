@@ -13,6 +13,16 @@ services:
       POSTGRES_USER: db
     ports:
       - 7777:5432
+
+  my:
+    image: mysql:lts
+    environment:
+      MYSQL_ROOT_PASSWORD: my
+      MYSQL_DATABASE: my
+      MYSQL_PASSWORD: my
+      MYSQL_USER: my
+    ports:
+      - 7779:3306
   
   adminer:
     image: adminer
