@@ -303,7 +303,10 @@ type MkColumns<
 
 // type XXX = MkColumns<[["abc", { type: "text" }], ["tef", { type: "int" }]]>;
 type XXX2 = MkColumns<
-  [["col1", PathExp<"abc", "col1", "int", "No">], ["col2", PathExp<"abc", "col2", "text", "No">]],
+  [
+    ["col1", PathExp<"abc", "col1", "int", "No">],
+    ["col2", PathExp<"abc", "col2", "text", "No">]
+  ],
   true,
   "col1"
 >;
@@ -485,6 +488,10 @@ type MkSelect<Exps extends readonly AnySelectable[]> = [
   ? SelectSingleColumn<E, AnyExp["pgType"]>
   : Select<Exps>;
 
+type Selectables =
+  | readonly (PathExp<any, any, any, "No"> | AliasExp<any, any, "No">)[]
+  | readonly (PathExp<any, any, any, "Post"> | AliasExp<any, any, "Post">)[];
+
 const mkDb = <Tables extends TablesType>(tables: Tables) => {
   type QueryTables = MkQueryTables<Tables>;
 
@@ -544,7 +551,7 @@ const mkDb = <Tables extends TablesType>(tables: Tables) => {
   const SELECT = <
     Froms extends readonly C[],
     Group extends Record<string, string[]>,
-    const Q extends readonly AnySelectable[]
+    const Q extends Selectables
   >(
     // fun: <Q>(tables: Froms) => Q,
     fun: (tables: MkTables<QueryTables, Froms, Group>) => Q,
@@ -638,12 +645,15 @@ const f = SELECT((t) => {
 
 // const t1231 =
 
-// SELECT( t => ,FROM("person")
-//   .WHERE((x) =>
-//     x.person.id("=", x.person.id).AND(x.person.id("=", x.person.id))
-//   )
-//   .GROUP_BY((x) => [x.person.name])
-// )
+const result = SELECT(
+  (t) => [t.person.name, t.person.name],
+  FROM("person")
+    .JOIN("pet")
+    .WHERE(({ person, pet }) =>
+      pet.owner_id("=", person.id)
+    )
+    .GROUP_BY((x) => [x.person.name])
+);
 
 type AUAU = ExpandedSelectResult<typeof f>;
 
