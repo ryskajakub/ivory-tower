@@ -417,20 +417,24 @@ type AllPostAgg<Exps extends readonly AnySelectable[]> = Exps extends readonly [
 
 // type abcdef = AllPostAgg<readonly [AliasExp<any, any, "Post">]>;
 
-class SelectSingleColumn<
-  Exp extends AnySelectable,
-  pgType extends PgType
-> extends Exp<pgType, "No"> {
-  type: "select_single_column";
-}
+// class SelectSingleColumn<
+//   Exp extends AnySelectable,
+//   pgType extends PgType
+// > extends Exp<pgType, "No"> {
+//   type: "select_single_column";
+// }
 
-class SelectSingleColumnAndRow<
-  Exp extends AnySelectable,
-  pgType extends PgType
-> extends Exp<pgType, "No"> {}
+// class SelectSingleColumnAndRow<
+//   Exp extends AnySelectable,
+//   pgType extends PgType
+// > extends Exp<pgType, "No"> {}
 
-class Select<Exps extends readonly AnySelectable[]> {
+type SelectType = "multi" | "single"
+
+class Select<Exps extends readonly AnySelectable[], Rows extends SelectType> {
   type: "select";
+  cols: Exps["length"] extends 1 ? "single" : "multi"
+  rows: Rows
   // AS = <T extends string>(alias: T): MkSelectAs<T, Exps> => {
   //   // @ts-ignore
   //   return null;
@@ -480,13 +484,6 @@ type mkGroupBy<Q extends readonly AnyGroupExp[]> = ExpandRecursively<
 // type TTT8 = mkX<{ "abc": 3 }, "def">
 
 // type TTTTT = mkGroupBy<readonly [PathExp<"abc", "def", "boolean", "No">, PathExp<"xxx", "lol", "int", "No">, FunExp<"text", "No">, PathExp<"xxx", "wtf", "int", "No">]>;
-
-type MkSelect<Exps extends readonly AnySelectable[]> = [
-  Exps["length"],
-  Exps
-] extends [1, [infer E extends AnySelectable]]
-  ? SelectSingleColumn<E, AnyExp["pgType"]>
-  : Select<Exps>;
 
 type Selectables =
   | readonly (PathExp<any, any, any, "No"> | AliasExp<any, any, "No">)[]
@@ -561,6 +558,8 @@ const mkDb = <Tables extends TablesType>(tables: Tables) => {
     return null;
   };
 
+  type MkSelect<Exps extends readonly AnySelectable[]> = Select<Exps, "multi">;
+
   //   const x = SELECT(
   //     () => [null as unknown as SelectAs<any, any, unknown>],
   //     FROM("person")
@@ -621,11 +620,11 @@ type SelectResult<Exps extends readonly AnySelectable[]> =
 
 type SR = SelectResult<[AliasExp<"N", "int", "Post">]>;
 
-type ExpandedSelectResult<S extends Select<any>> = S extends Select<
-  infer E extends readonly AnySelectable[]
->
-  ? SelectResult<E>
-  : unknown;
+// type ExpandedSelectResult<S extends Select<any>> = S extends Select<
+//   infer E extends readonly AnySelectable[]
+// >
+//   ? SelectResult<E>
+//   : unknown;
 
 // type TTTTT = typeof xxx extends AnySingleAsSelect ? 1 : 3;
 // type TTTTT = SelectAs<any, any, true> extends AnySingleAsSelect ? 1 : 3
@@ -655,6 +654,6 @@ const result = SELECT(
     .GROUP_BY((x) => [x.person.name])
 );
 
-type AUAU = ExpandedSelectResult<typeof f>;
+// type AUAU = ExpandedSelectResult<typeof f>;
 
 // const from = SELECT(FROM("person").JOIN("pets", { AS: "p" }));
