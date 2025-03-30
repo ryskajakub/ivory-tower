@@ -1,2 +1,3 @@
-- read database schema from database, allow assing meaning to relations
-- error reporting
+# - read database schema from database, allow assing meaning to relations
+# - error reporting
+- 

@@ -135,11 +135,20 @@ const x: Exp<"abc", "def", "No"> = null;
 
 // class AliasExp<Path>
 
+// type JsonBType = string | number | null | JsonBType[] | Record<string, JsonBType> | "datestring"
+
 class JsonB<T> {
   t: T;
 }
 
-type PgType = "boolean" | "int" | "text" | JsonB<any> | null | unknown;
+type PgType =
+  | "timestamp"
+  | "boolean"
+  | "int"
+  | "text"
+  | JsonB<any>
+  | null
+  | unknown;
 
 // type MkJsonBArrayAggType<T extends PgType> = T extends "int"
 //   ? JsonB<number[]>
@@ -149,29 +158,27 @@ type PgType = "boolean" | "int" | "text" | JsonB<any> | null | unknown;
 //   ? JsonB<U[]>
 //   : never;
 
-type MkJsonBArrayAggType<T extends PgType> = JsonB<MkJsonBType<T>[]>;
+type MkJsonBType<T extends PgType> = JsonB<ToJsonType<T>>
 
-type MkJsonBType<T extends PgType> = null extends T
-  ? null | MkJsonBTypeNoNull<T>
-  : MkJsonBTypeNoNull<T>;
+type ToJsonType<T extends PgType> = MkJsTypeNoNull<T, "stringdate">
 
-type MkJsonBTypeNoNull<T extends PgType> = T extends "int"
+type MkJsonBArrayAggType<T extends PgType> = JsonB<ToJsonType<T>[]>;
+
+type MkJsTypeNoNull<T extends PgType, Timestamp> = T extends "int"
   ? number
   : T extends "text"
   ? string
+  : T extends "boolean"
+  ? boolean
+  : T extends "timestamp"
+  ? Timestamp
   : T extends JsonB<infer U>
   ? U
   : never;
 
-type MkJsTypeNoNull<T extends PgType> = T extends "int"
-  ? number
-  : T extends "text"
-  ? string
-  : T extends JsonB<infer U>
-  ? U
-  : never;
-
-type ToJsType<T extends PgType> = T extends (infer A | null) ? MkJsTypeNoNull<A> : never
+type ToJsType<T extends PgType, Timestamp = Date> = null extends infer TT
+  ? MkJsTypeNoNull<TT, Timestamp> | null
+  : MkJsTypeNoNull<T, Timestamp>;
 
 type JsonbAggResult<T extends NonAliasExp<PgType, "Pre" | "No">> =
   T extends AnyNonAliasExp
