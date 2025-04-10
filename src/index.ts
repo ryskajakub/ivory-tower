@@ -8,14 +8,27 @@ type ExpandRecursively<T> = T extends object
 const tables = {
   pet: [
     ["id", { type: "int" }],
-    ["name", { type: "text", nullable: true }],
+    ["nickname", { type: "text", nullable: true }],
     ["owner_id", { type: "int" }],
   ],
   person: [
     ["id", { type: "int" }],
     ["name", { type: "text" }],
+    ["age", { type: "int" }],
   ],
 } as const;
+
+// type TableDefinition =
+
+type mkMutable<T> = {
+  -readonly [P in keyof T]: T[P] extends object ? mkMutable<T[P]> : T[P];
+};
+
+type mkMutableShallow<T> = {
+  -readonly [P in keyof T]: T[P];
+};
+
+// type MMMMM = ExpandRecursively<mkMutable<typeof tables>>;
 
 type AggState = "Pre" | "Post" | "No";
 
@@ -158,9 +171,9 @@ type PgType =
 //   ? JsonB<U[]>
 //   : never;
 
-type MkJsonBType<T extends PgType> = JsonB<ToJsonType<T>>
+type MkJsonBType<T extends PgType> = JsonB<ToJsonType<T>>;
 
-type ToJsonType<T extends PgType> = MkJsTypeNoNull<T, "stringdate">
+type ToJsonType<T extends PgType> = MkJsTypeNoNull<T, "stringdate">;
 
 type MkJsonBArrayAggType<T extends PgType> = JsonB<ToJsonType<T>[]>;
 
@@ -312,7 +325,15 @@ const mkLit = <T extends Lit>(t: T): MkLit<T> => {
 
 // type X = { [keyof M]: string }
 
-type TablesType = Record<string, readonly (readonly [string, TableColumn])[]>;
+// type TableType = [string, TableColumn][]
+
+// type DbType = Record<string, TableType>;
+
+type RawDbType = Readonly<
+  Record<string, ReadonlyArray<readonly [string, TableColumn]>>
+>;
+
+type QTables = Record<string, [string, AnyPathExp][]>;
 
 // type UnReadonlyObj<T> = {
 //     -readonly [K in keyof T]: T[K]
@@ -357,33 +378,33 @@ interface TableColumn {
 //     [K in keyof ]
 // }
 
-type QueriedTableType = readonly (readonly [string, AnyPathExp])[];
+type QueriedTableType = [string, AnyPathExp][];
 type QueriedTablesType = Record<string, QueriedTableType>;
 
-type MkColumns<
-  Table extends readonly (readonly [string, any])[],
-  Agg extends boolean,
-  AggColumns extends string
-> = Table["length"] extends 0
+type mkColumns<
+  table extends QueriedTableType,
+  agg extends boolean,
+  aggColumns extends string
+> = table["length"] extends 0
   ? {}
-  : Table extends readonly [
-      readonly [infer ColName extends string, infer ColType extends AnyPathExp],
-      ...infer Rest extends readonly (readonly [string, any])[]
+  : table extends [
+      [infer ColName extends string, infer ColType extends AnyPathExp],
+      ...infer Rest extends [string, any][]
     ]
   ? {
-      [K in ColName]: Agg extends true
+      [K in ColName]: agg extends true
         ? PathExp<
             ColType["table"],
             ColType["column"],
             ColType["pgType"],
-            ColName extends AggColumns ? "Post" : "Pre"
+            ColName extends aggColumns ? "Post" : "Pre"
           >
         : ColType & Operand<ColType["pgType"]> & mkOperand<ColType["pgType"]>;
-    } & MkColumns<Rest, Agg, AggColumns>
+    } & mkColumns<Rest, agg, aggColumns>
   : never;
 
 // type XXX = MkColumns<[["abc", { type: "text" }], ["tef", { type: "int" }]]>;
-type XXX2 = MkColumns<
+type XXX2 = mkColumns<
   [
     ["col1", PathExp<"abc", "col1", "int", "No">],
     ["col2", PathExp<"abc", "col2", "text", "No">]
@@ -394,36 +415,37 @@ type XXX2 = MkColumns<
 
 type T = [][number];
 
-type C = readonly [any, any];
+type C = [any, any];
 
-type MkTables<
-  Tables extends Record<string, any>,
-  Froms extends readonly C[],
-  Group extends Record<string, readonly string[]>
-> = Froms["length"] extends 0
+type mkTables<
+  qTables extends QTables,
+  fromItems extends FromItems,
+  Group extends Record<string, string[]>
+> = fromItems["length"] extends 0
   ? {}
-  : Froms extends readonly [
-      readonly [infer Name extends keyof Tables, infer Alias extends string],
-      ...infer Rest extends readonly (readonly [keyof Tables, string])[]
+  : fromItems extends [
+      infer head extends [
+        infer tableName extends keyof qTables,
+        infer tableAlias extends string
+      ],
+      ...infer rest extends FromItems
     ]
   ? {
-      [K in Alias]: MkColumns<
-        Tables[Name],
+      [k in head[1]]: mkColumns<
+        qTables[head[0]],
         {} extends Group ? false : true,
-        Name extends keyof Group ? Group[Name][number] : never
-      >; //MkColumns<Tables[Name]>;
-    } & MkTables<Tables, Rest, Group>
-  : never;
+        k extends keyof Group ? Group[k][number] : never
+      >;
+    } & mkTables<qTables, rest, Group>
+  : unknown;
 
-type X = {} extends {} ? 1 : 2;
-
-// @ts-ignore
-// const x: TTT = null;
-
-// x.person.
-// x.
-
-// type t = 132 & unknown
+type TTTT = ExpandRecursively<
+  mkTables<
+    mkQueryTables<mkMutable<typeof tables>>,
+    [["person", "p"], ["pet", "pet"]],
+    {}
+  >
+>;
 
 type MkType<T extends TableColumn> =
   //   | (T extends "text" ? "text" : "int")
@@ -440,29 +462,28 @@ type MkColumnExp<
   ColumnData extends TableColumn
 > = PathExp<TableName, ColumnName, MkType<ColumnData>, "No">;
 
-type MkQueryColumns<
-  TableName extends string,
-  Columns extends readonly C[]
-> = Columns["length"] extends 0
-  ? readonly []
-  : Columns extends readonly [
-      readonly [
-        infer ColumnName extends string,
-        infer ColumnData extends TableColumn
-      ],
+type mkQueryColumns<
+  tableName extends string,
+  columns extends C[]
+> = columns["length"] extends 0
+  ? []
+  : columns extends [
+      [infer columnName extends string, infer columnData extends TableColumn],
       ...infer Rest extends C[]
     ]
-  ? readonly [
-      readonly [ColumnName, MkColumnExp<TableName, ColumnName, ColumnData>],
-      ...MkQueryColumns<TableName, Rest>
+  ? [
+      [columnName, MkColumnExp<tableName, columnName, columnData>],
+      ...mkQueryColumns<tableName, Rest>
     ]
   : never;
 
-type MkQueryTables<Tables extends Record<string, any>> = {
-  [K in keyof Tables]: K extends string ? MkQueryColumns<K, Tables[K]> : never;
+type mkQueryTables<Tables extends Record<string, any>> = {
+  [K in keyof Tables]: K extends string ? mkQueryColumns<K, Tables[K]> : never;
 };
 
-type TTT2 = MkQueryTables<typeof tables>;
+type QueriedTablesOutside = ExpandRecursively<
+  mkQueryTables<mkMutable<typeof tables>>
+>;
 
 // class SelectAs<Exps extends readonly AnySelectable[], Name extends string> {
 //   type: "select_as";
@@ -477,11 +498,9 @@ type TTT2 = MkQueryTables<typeof tables>;
 
 // type AnySelectAsExp = SelectAsExp<any, any>;
 
-type IsSingle<Exps extends readonly any[]> = Exps["length"] extends 1
-  ? never
-  : unknown;
+type IsSingle<Exps extends any[]> = Exps["length"] extends 1 ? never : unknown;
 
-type AllPostAgg<Exps extends readonly AnySelectable[]> = Exps extends readonly [
+type AllPostAgg<Exps extends AnySelectable[]> = Exps extends [
   AliasExp<any, any, "Post">
 ]
   ? never
@@ -512,130 +531,151 @@ type AllPostAgg<Exps extends readonly AnySelectable[]> = Exps extends readonly [
 
 type SelectQuant = "multi" | "single";
 
+interface SelectQuant2 {
+  rows: SelectQuant;
+  cols: SelectQuant;
+}
+
 type MkRowsQuant<
   Num extends number,
   Original extends SelectQuant
 > = Num extends 1 ? "single" : Original;
 
+type mkColQuant<sel extends Selectables> = sel["length"] extends 1
+  ? "single"
+  : "multi";
+
 class SubQuery<
   Name extends string | unknown,
-  Exps extends NonEmptyArray<AnySelectedColumn>,
-  Rows extends SelectQuant,
-  Cols extends SelectQuant
-> implements
-    Exp<
-      [Rows, Cols] extends ["single", "single"] ? Exps[0]["type"] : unknown,
-      "No"
-    >
-{
-  pgType: [Rows, Cols] extends ["single", "single"] ? Exps[0]["type"] : unknown;
-  aggState: "No";
+  Exps extends Selected,
+  cols extends SelectQuant,
+  rows extends SelectQuant
+> extends Exp<Exps[0]["pgType"], "No"> {
+  cols: cols;
+  rows: rows;
   subquery: "subquery";
-  cols: Cols;
-  rows: Rows;
   name: Name;
 }
 
-type resetExpsAggStateGo<Exps extends readonly SingleSelectable[]> =
+type resetExpsAggStateGo<Exps extends SingleSelectable[]> =
   Exps["length"] extends 0
     ? []
-    : Exps extends readonly [
+    : Exps extends [
         infer Head extends SingleSelectable,
-        ...infer Rest extends readonly SingleSelectable[]
+        ...infer Rest extends SingleSelectable[]
       ]
     ? [MkSelectedColumn<Head>, ...resetExpsAggStateGo<Rest>]
     : never;
 
-type ResetExpsAggState<Exps extends Selectables> = Exps extends readonly [
+type ResetExpsAggState<Exps extends Selectables> = Exps extends [
   infer Head extends SingleSelectable,
-  ...infer Rest extends readonly SingleSelectable[]
+  ...infer Rest extends SingleSelectable[]
 ]
   ? [MkSelectedColumn<Head>, ...resetExpsAggStateGo<Rest>]
   : never;
 
-// Exps["length"] extends 0
-//   ? []
-//   : Exps extends readonly [
-//       infer Head extends AnyExp,
-//       ...infer Rest extends readonly AnyExp[]
-//     ]
-//   ? [ReplaceAggState<Head, "No">, ...ResetExpsAggState<Rest>]
-//   : [];
+// class AsQuery<
+//   Exps extends SelectedDone,
+// > {
+//   query: "query";
 
-// class As<
-//   Exps extends NonEmptyArray<AnySelectedColumn>,
-//   Rows extends SelectQuant,
-//   Cols extends SelectQuant
-// > extends SubQuery<unknown, Exps, Rows, Cols> {
-//   as_: "as";
-//   AS = <T extends string>(t: T): SubQuery<T, Exps, Rows, Cols> => {
+//   AS = <T extends string>(x: T): SubQuery<T, Exps> => {
 //     // @ts-ignore
 //     return null;
 //   };
 // }
 
-const MakeExpression = (T) => class extends T {};
+interface OrderByArgs<
+  qTables extends QTables = any,
+  fromItems extends FromItems = any,
+  grouped extends Record<string, string[]> = any
+> {
+  qTables: qTables;
+  fromItems: fromItems;
+  grouped: grouped;
+}
 
-class Query<
-  Exps extends NonEmptyArray<AnySelectedColumn>,
-  Rows extends SelectQuant,
-  Cols extends SelectQuant
-> extends SubQuery<unknown, Exps, Rows, Cols> {
-  query: "query";
-
-  AS = <T extends string>(x: T): SubQuery<T, Exps, Rows, Cols> => {
+class AsQuery<
+  exps extends Selected,
+  cols extends SelectQuant,
+  rows extends SelectQuant
+> extends SubQuery<unknown, exps, cols, rows> {
+  asQuery: "asQuery";
+  AS = <T extends string>(t: T): SubQuery<T, exps, cols, rows> => {
     // @ts-ignore
     return null;
   };
 }
 
-// class OrderBy<
-//   Exps extends Selected,
-//   Rows extends SelectQuant,
-//   Cols extends SelectQuant
-// > extends As<Exps, Rows, Cols> {
-//   type: "select";
-//   // AS = <T extends string>(alias: T): MkSelectAs<T, Exps> => {
-//   //   // @ts-ignore
-//   //   return null;
-//   // };
+class Limit<
+  exps extends Selected,
+  cols extends SelectQuant,
+  rows extends SelectQuant
+> extends AsQuery<exps, cols, rows> {
+  limit: "limit";
+}
 
-//   LIMIT = <Num extends number>(
-//     x: Num
-//   ): As<Exps, MkRowsQuant<Num, Rows>, Cols> => {
-//     // @ts-ignore
-//     return null;
-//   };
+// type mkOrderTables<exps extends Selectables, orderByArgs extends OrderByArgs | null> =
+//   orderByArgs extends OrderByArgs ?
 
-//   // GROUP_BY = <const Q extends readonly AnyGroupExp[]>(
-//   //   fun: (tables: MkTables<QueryTables, Selected, {}>) => Q
-//   // ): Data<Selected, mkGroupBy<Q>> => {
-//   //   // @ts-ignore
-//   //   return null;
-//   // };
-// }
+class OrderBy<
+  cols extends SelectQuant,
+  rows extends SelectQuant,
+  exps extends Selected,
+  orderByArgs extends OrderByArgs | null
+> extends Limit<exps, cols, rows> {
+  orderBy: "orderBy";
+  // ORDER_BY = <Q extends Selectables>(
+  //   f: (x: mkTables<mkOrderTables<exps, orderByArgs>>) => Q
+  // ) => {
+  //   // @ts-ignore
+  //   return null;
+  // };
+}
 
-// type T = true extends false ? 1 : 2
+// type UnionCol = Selectables[number] | LitExp<any, any>
 
-// type Ttt = never | unknown
+type unionSelectablesGo<exps extends Selected> = exps["length"] extends 1
+  ? [SelectedColumn1<exps[0]["pgType"]>]
+  : exps extends [
+      infer head extends Exp<any, any>,
+      ...infer rest extends Selected
+    ]
+  ? [SelectedColumn1<head["pgType"]>, ...unionSelectablesGo<rest>]
+  : never;
 
-// type AnySingleAsSelect = SelectAs<[any], any, never>;
+type unionSelectables<exps extends Selected> = AsQuery<
+  unionSelectablesGo<exps>,
+  any,
+  any
+>;
 
-// type AnySelectable = AnySingleAsSelect
+class Union<
+  cols extends SelectQuant,
+  rows extends SelectQuant,
+  exps extends Selected,
+  orderByArgs extends OrderByArgs | null
+> extends OrderBy<cols, rows, exps, orderByArgs> {
+  union: "union";
+  UNION = <T extends unionSelectables<exps>>(
+    x: T
+  ): Union<cols, rows, exps, null> => {
+    // @ts-ignore
+    return null;
+  };
+}
 
-// type XXX1 = readonly [SelectAs<any, any, false>] extends readonly (AnySingleAsSelect | AnyLitExp )[] ? 1 : 2
-
-type WhereExp = LitExp<"boolean", "No"> | FunExp<"boolean", "No">;
+type WhereExp =
+  | LitExp<"boolean", "No">
+  | FunExp<"boolean", "No">
+  | PathExp<any, any, "boolean", "No">;
 
 type mkGroupByGo<
-  Q extends readonly AnyGroupExp[],
+  Q extends AnyGroupExp[],
   Acc extends Record<string, string[]>
 > = Q["length"] extends 0
   ? Acc
-  : Q extends readonly [
-      infer Head,
-      ...infer Rest extends readonly AnyGroupExp[]
-    ]
+  : Q extends [infer Head, ...infer Rest extends AnyGroupExp[]]
   ? Head extends PathExp<any, any, any, "No">
     ? mkGroupByGo<
         Rest,
@@ -649,144 +689,272 @@ type mkGroupByGo<
     : mkGroupByGo<Rest, Acc>
   : never;
 
-type mkGroupBy<Q extends readonly AnyGroupExp[]> = ExpandRecursively<
-  mkGroupByGo<Q, {}>
->;
+type mkGroupBy<Q extends AnyGroupExp[]> = ExpandRecursively<mkGroupByGo<Q, {}>>;
 
-// type mkX <rec extends Record<string, number>, str extends string> = rec[str]
-
-// type TTT8 = mkX<{ "abc": 3 }, "def">
-
-// type TTTTT = mkGroupBy<readonly [PathExp<"abc", "def", "boolean", "No">, PathExp<"xxx", "lol", "int", "No">, FunExp<"text", "No">, PathExp<"xxx", "wtf", "int", "No">]>;
-
-type NonEmptyArray<T> = readonly [T, ...(readonly T[])];
+type NonEmptyArray<T> = [T, ...T[]];
 
 type SingleSelected =
   | PathExp<any, any, any, "No">
   | AliasExp<any, any, "No">
   | SubQuery<string, any, "single", "single">;
 
-type Selected = NonEmptyArray<SingleSelected>;
+// type Selected = NonEmptyArray<SingleSelected>;
+
+type SelectedDone = NonEmptyArray<AliasExp<any, any, "No">>;
 
 type SingleSelectable =
   | PathExp<any, any, any, "No" | "Post">
   | AliasExp<any, any, "No" | "Post">
   | SubQuery<string, any, "single", "single">;
 
+type NoAggSelectables = NonEmptyArray<AliasExp<any, any, "No">>;
+
+type Selected = NonEmptyArray<
+  | PathExp<any, any, any, "No">
+  | AliasExp<any, any, "No">
+  | SubQuery<string, any, "single", "single">
+>;
+
+type SelectedColumn1<pgType extends PgType> =
+  | PathExp<any, any, pgType, "No">
+  | AliasExp<any, pgType, "No">
+  | SubQuery<any, [SelectedColumn1<pgType>], "single", "single">;
+
 type Selectables =
-  | NonEmptyArray<
-      | PathExp<any, any, any, "No">
-      | AliasExp<any, any, "No">
-      | SubQuery<string, any, "single", "single">
-    >
+  | Selected
   | NonEmptyArray<
       | PathExp<any, any, any, "Post">
       | AliasExp<any, any, "Post">
       | SubQuery<string, any, "single", "single">
     >;
 
-const mkDb = <Tables extends TablesType>(tables: Tables) => {
-  type QueryTables = MkQueryTables<Tables>;
+type AnyTables = Record<string, any>;
 
-  class Data<
-    Selected extends readonly (readonly [any, any])[],
-    Grouped extends Record<string, readonly string[]>
-  > {
-    selected: Selected;
-    grouped: Grouped;
-  }
+type AnyFromItems = Record<string, any>;
 
-  class GroupBy<Selected extends readonly (readonly [any, any])[]> extends Data<
-    Selected,
-    {}
-  > {
-    GROUP_BY = <const Q extends readonly AnyGroupExp[]>(
-      fun: (tables: MkTables<QueryTables, Selected, {}>) => Q
-    ): Data<Selected, mkGroupBy<Q>> => {
-      // @ts-ignore
-      return null;
-    };
-  }
+// type mkJoin<
+//   qTables extends AnyTables,
+//   fromItems extends AnyTables,
+//   T extends keyof qTables
+// > =
 
-  class Where<
-    Selected extends readonly (readonly [any, any])[]
-  > extends GroupBy<Selected> {
-    WHERE = (
-      fun: (tables: MkTables<QueryTables, Selected, {}>) => WhereExp
-    ): GroupBy<Selected> => {
-      // @ts-ignore
-      return null;
-    };
-  }
+// Args extends readonly [infer T, infer Options extends { AS: string }]
+//   ? From<qTables, [...Selected, [T, Options["AS"]]]>
+//   : Args extends readonly [infer T]
+//   ? From<qTables, [...Selected, [T, T]]>
+//   : never;
 
-  class Join<
-    Selected extends readonly (readonly [any, any])[]
-  > extends Where<Selected> {
-    public JOIN<
-      T extends keyof Tables,
-      Options extends { AS: string },
-      const Args extends readonly [T] | readonly [T, Options]
-    >(...args: Args): JoinT<Selected, Args> {
-      // @ts-ignore
-      return null;
-    }
-  }
+class Data<
+  qTables extends QTables,
+  fromItems extends FromItems,
+  grouped extends Record<string, string[]>
+> {
+  grouped: grouped;
+  qTables: qTables;
+  fromItems: fromItems;
+}
 
-  type JoinT<
-    Selected extends readonly (readonly [any, any])[],
-    Args
-  > = Args extends readonly [infer T, infer Options extends { AS: string }]
-    ? Join<[...Selected, [T, Options["AS"]]]>
-    : Args extends readonly [infer T]
-    ? Join<[...Selected, [T, T]]>
-    : never;
-
-  const SELECT = <const Q extends Selectables, Datas extends Data<any, any>>(
-    // fun: <Q>(tables: Froms) => Q,
-    fun: (
-      tables: MkTables<QueryTables, Datas["selected"], Datas["grouped"]>
-    ) => Q,
-    j: Datas
-  ): MkSelect<Q, Datas> => {
+class GroupBy<
+  qTables extends QTables,
+  fromItems extends FromItems
+> extends Data<qTables, fromItems, {}> {
+  GROUP_BY = <const Q extends AnyGroupExp[]>(
+    fun: (tables: mkTables<qTables, fromItems, {}>) => Q
+  ): Data<qTables, fromItems, mkGroupBy<mkMutableShallow<Q>>> => {
     // @ts-ignore
     return null;
   };
+}
 
-  // type TTT = GroupBy<any> extends Join<any> ? true : false;
+class Where<
+  qTables extends QTables,
+  fromItems extends FromItems
+> extends GroupBy<qTables, fromItems> {
+  WHERE = (
+    fun: (tables: mkTables<qTables, fromItems, {}>) => WhereExp
+  ): GroupBy<qTables, fromItems> => {
+    // @ts-ignore
+    return null;
+  };
+}
 
-  type MkSelect<Exps extends Selectables, Datas extends Data<any, any>> = Query<
-    ResetExpsAggState<Exps>,
-    [Datas, Exps[0]["aggState"]] extends [GroupBy<any>, "Post"]
+type secondElementsUnion<arr extends [string, any][]> = arr[number][1];
+
+// type TTT22 = keysUnion<[["abc", 123], ["def", "xxx"]]>
+
+type FromItems = [string, string][];
+
+type mkFromNoAlias<
+  qTables extends QTables,
+  fromItems extends FromItems,
+  T extends keyof qTables & string
+> = T extends secondElementsUnion<fromItems>
+  ? unknown
+  : From<qTables, [...fromItems, [T, T]]>;
+
+type mkFromAlias<
+  qTables extends QTables,
+  fromItems extends FromItems,
+  T extends keyof qTables & string,
+  A extends string
+> = A extends keyof secondElementsUnion<fromItems>
+  ? unknown
+  : From<qTables, [...fromItems, [T, A]]>;
+
+type mkFrom<
+  qTables extends QTables,
+  fromItems extends FromItems,
+  T extends keyof qTables & string,
+  A extends string[]
+> = A["length"] extends 0
+  ? mkFromNoAlias<qTables, fromItems, T>
+  : A["length"] extends 1
+  ? mkFromAlias<qTables, fromItems, T, A[0]>
+  : unknown;
+
+type ABC1 = mkFrom<QueriedTablesOutside, [], "person", []>;
+
+// @ts-ignore
+const xxx: ABC1 = null;
+
+// xxx.WHERE(x => x.)
+
+class From<
+  qTables extends AnyTables,
+  fromItems extends FromItems
+> extends Where<qTables, fromItems> {
+  FROM<const T extends keyof qTables & string, const A extends string[]>(
+    table: T,
+    ...alias: A
+  ): mkFrom<qTables, fromItems, T, A> {
+    // @ts-ignore
+    return null;
+  }
+}
+
+// const l =
+
+// type MkSelect1<T extends NoAggSelectables> = Union<QTables extends AnyTables, selectedDone extends SelectedDone> ;
+
+type TypescriptLit = string | number;
+
+type MkLit1<T> = T extends string ? "text" : "int";
+
+const literal = <T extends TypescriptLit>(lit: T): LitExp<MkLit1<T>, "No"> => {
+  // @ts-ignore
+  return null;
+};
+
+type mkMkTables<Datas extends Data<any, any, any>[]> = Datas["length"] extends 1
+  ? mkTables<Datas[0]["qTables"], Datas[0]["fromItems"], Datas[0]["grouped"]>
+  : never;
+
+const SELECT = <
+  const Q extends Selectables | Selectables[number],
+  Datas extends Data<any, any, any>[]
+>(
+  fun: ((tables: mkMkTables<Datas>) => Q) | Q,
+  ...j: Datas
+): mkSelect<Q, Datas> => {
+  // @ts-ignore
+  return null;
+};
+
+// type TTT = GroupBy<any> extends Join<any> ? true : false;
+
+type resetExp<exp extends Selectables[number]> = exp extends AnyPathExp
+  ? PathExp<exp["table"], exp["column"], exp["pgType"], "No">
+  : exp extends AnyAliasExp
+  ? AliasExp<exp["alias"], exp["pgType"], "No">
+  : exp;
+
+type resetExpsAggState<exps extends Selectables> = exps["length"] extends 1
+  ? [resetExp<exps[0]>]
+  : exps extends [
+      infer head extends Selectables[number],
+      ...infer tail extends Selectables
+    ]
+  ? [resetExp<head>, ...resetExpsAggState<tail>]
+  : never;
+
+type wrapInArray<elem extends unknown | unknown[]> = elem extends unknown[]
+  ? elem
+  : [elem];
+
+type mkSelectColQuant<exps extends Selectables | Selectables[number]> =
+  exps extends Selectables
+    ? Selectables["length"] extends 1
       ? "single"
-      : SelectQuant,
-    Exps["length"] extends 1 ? "single" : SelectQuant
-  >;
+      : "multi"
+    : "single";
 
-  type MMMM = MkSelect<[AliasExp<"abc", "int", "No">], Data<any, any>>;
+type mkSelectRowQuant<
+  exps extends Selectables,
+  data extends Data<any, any, any>
+> = exps[0]["aggState"] extends "Post"
+  ? data extends GroupBy<any, any>
+    ? "single"
+    : "multi"
+  : "multi";
 
-  //   const x = SELECT(
-  //     () => [null as unknown as SelectAs<any, any, unknown>],
-  //     FROM("person")
-  //   );
+type mkSelect<
+  Exps extends Selectables | Selectables[number],
+  Datas extends Data<any, any, any>[]
+> = Datas["length"] extends 0
+  ? Union<
+      mkSelectColQuant<Exps>,
+      "single",
+      resetExpsAggState<wrapInArray<Exps>>,
+      null
+    >
+  : Datas["length"] extends 1
+  ? Union<
+      mkSelectColQuant<Exps>,
+      mkSelectRowQuant<wrapInArray<Exps>, Datas[0]>,
+      resetExpsAggState<wrapInArray<Exps>>,
+      Datas[0]
+    >
+  : unknown;
+
+// Datas["length"] extends 1 ? Union<> :
+
+type mkFromTables<
+  queryTables extends AnyTables,
+  k extends keyof queryTables
+> = {
+  [K in T]: queryTables[T];
+};
+
+// AsQuery<
+//   ResetExpsAggState<Exps>,
+//   [Datas, Exps[0]["aggState"]] extends [GroupBy<any, any>, "Post"]
+//     ? "single"
+//     : SelectQuant,
+//   Exps["length"] extends 1 ? "single" : SelectQuant
+// >;
+
+const mkDb = <Tables extends RawDbType>(tables: Tables) => {
+  type QueryTables = mkQueryTables<mkMutable<Tables>>;
 
   return {
-    FROM: <T extends keyof Tables>(table: T) => new Join<[[T, T]]>(),
-    SELECT,
+    FROM: <T extends keyof Tables & string, A extends any[]>(
+      table: T,
+      ...alias: A
+    ): mkFrom<QueryTables, [], T, A> => {
+      // @ts-ignore
+      return null;
+    },
   };
 };
 
 // const SELECT = (from: From) => {
 // }
 
-const { FROM, SELECT } = mkDb(tables);
+const { FROM } = mkDb(tables);
 
 // type MkTables<Tables, Selected> =
 
 type Expand<T> = T extends unknown ? { [K in keyof T]: Expand<T[K]> } : never;
-
-const from = FROM("person")
-  .JOIN("pet", { AS: "p" })
-  .JOIN("person", { AS: "x" });
 
 // type T = Expand<typeof from>
 
@@ -810,87 +978,65 @@ type ColResult<Type extends PgType> = null extends Type
   ? NonNullableResult<Type> | null
   : NonNullableResult<Type>;
 
-// type XXX = ColResult<MkJsonBArrayAggType<"int">>;
-
-type SelectResult<Exps extends readonly AnySelectedColumn[]> =
-  Exps["length"] extends 0
-    ? {}
-    : Exps extends readonly [
-        infer Head extends AnySelectedColumn,
-        ...infer Rest extends readonly AnySelectedColumn[]
-      ]
-    ? { [K in Head["name"]]: ToJsType<Head["type"]> } & SelectResult<Rest>
-    : never;
+type SelectResult<Exps extends AnySelectedColumn[]> = Exps["length"] extends 0
+  ? {}
+  : Exps extends [
+      infer Head extends AnySelectedColumn,
+      ...infer Rest extends AnySelectedColumn[]
+    ]
+  ? { [K in Head["name"]]: ToJsType<Head["type"]> } & SelectResult<Rest>
+  : never;
 
 type SR = SelectResult<
   [SelectedColumn<"name", "int">, SelectedColumn<"xxx", "text">]
 >;
 
-type ExpandedSelectResult<S extends Query<any, any, any>> = S extends Query<
-  infer E extends NonEmptyArray<AnySelectedColumn>,
-  any,
-  any
->
-  ? ExpandRecursively<SelectResult<E>>
-  : unknown;
+// type ExpandedSelectResult<S extends AsQuery<any, any, any>> = S extends AsQuery<
+//   infer E extends NonEmptyArray<AnySelectedColumn>,
+//   any,
+//   any
+// >
+//   ? ExpandRecursively<SelectResult<E>>
+//   : unknown;
 
-// type TTTTT = typeof xxx extends AnySingleAsSelect ? 1 : 3;
-// type TTTTT = SelectAs<any, any, true> extends AnySingleAsSelect ? 1 : 3
+const mySelect = SELECT(literal(123).AS("123"));
 
-// const f = SELECT(
-//   (x) => [x.person.id, SELECT((x) => [jsonb_agg(x.person.id)], FROM("person")).AS("abc")],
-//   FROM("person").JOIN("pet", { AS: "p" })
-// );
-// const f = SELECT((t) => {
-//   const tt = jsonb_build_object("person", t.person.id, "n", t.person.name);
-
-//   const x = jsonb_agg(tt).AS("person_ids");
-//   //   type T = typeof x;
-//   //   type MMM = typeof x extends Exp<infer Type> ? ColResult<Type> : never;
-//   return [x];
-// }, FROM("person"));
-
-// const t1231 =
-
-// const p1 = SELECT((t) => [max(t.person.name)], FROM("person")).AS("xxx");
-
-// const xxx = SELECT(
-//   (x) => [max(x.pet.id)],
-//   FROM("pet").WHERE((x) => x.pet.owner_id("=", x.pet.owner_id))
-// ).AS("pet");
-
-// const result = SELECT(
-//   (t) => [t.person.name, t.person.id, t.pet.owner_id, xxx],
-//   FROM("person")
-//     .JOIN("pet")
-//     .WHERE(({ person, pet }) => pet.owner_id("=", person.id))
-// );
-
-// type AUAU = ExpandedSelectResult<typeof f>;
-
-// const from = SELECT(FROM("person").JOIN("pets", { AS: "p" }));
-
-const p = SELECT((x) => {
-  const t = jsonb_build_object("name", x.pet.name, "id", x.pet.id).AS("xxx");
-  return [t, x.pet.name];
-}, FROM("pet"));
-
-const t = SELECT(
-  (t) => [
-    t.person.name,
-    t.person.id,
-    SELECT(
-      (x) => [
-        jsonb_agg(jsonb_build_object("name", x.pet.name, "id", x.pet.id)).AS(
-          "xxx"
-        ),
-      ],
-      FROM("pet").WHERE((x) => x.pet.owner_id("=", t.person.id))
-    ).AS("ttttt"),
+const fff = SELECT(
+  (x) => [
+    // x.person.age,
+    // x.person.name,
+    max(x.person.id).AS("ttttt"),
+    // max(x.p.nickname).AS("nnn"),
   ],
   FROM("person")
-);
+    .FROM("pet", "p")
+    .WHERE((x) => x.person.id("=", x.p.owner_id))
+  // .GROUP_BY((x) => [x.person.age, x.person.name])
+)
+  .UNION(mySelect)
+  .UNION(mySelect);
 
-type TTTTTTT = ExpandedSelectResult<typeof t>;
-type TTTTTTTp = ExpandedSelectResult<typeof p>;
+// const p = SELECT((x) => {
+//   const t = jsonb_build_object("name", x.pet.name, "id", x.pet.id).AS("xxx");
+//   return [t, x.pet.name];
+// }, FROM("pet"));
+
+// const t = SELECT(
+//   (t) => [
+//     t.person.name,
+//     t.person.id,
+//     SELECT(
+//       (x) => [
+//         jsonb_agg(jsonb_build_object("name", x.pet.name, "id", x.pet.id)).AS(
+//           "xxx"
+//         ),
+//       ],
+//       FROM("pet").WHERE((x) => x.pet.owner_id("=", t.person.id))
+//     ).AS("ttttt"),
+//   ],
+//   FROM("person")
+// );
+
+// type TTTTTTT = ExpandedSelectResult<typeof t>;
+// type TTTTTTTp = ExpandedSelectResult<typeof p>;
 // type TTTTTTTx = <typeof p>;

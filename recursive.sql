@@ -1,21 +1,22 @@
 with 
 my_q as (
   with recursive boss_sub(boss, id, depth) as (
-  select null::int, id, 0, jsonb_build_object('name', name) as data from person where person.boss is null
-  union all
-  select person.boss, person.id, depth + 1, jsonb_build_object('name', name) from person 
-  join boss_sub on boss_sub.id = person.boss
+    select null::int, null::int, -1, '{}'::jsonb as data
+    union all
+    select person.boss, person.id, depth + 1, jsonb_build_object('name', name, 'id', person.id) from person 
+    join boss_sub on boss_sub.id is not distinct from person.boss
   )
-  select * from boss_sub
+  select * from boss_sub where id is not null
 )
 ,
-max_depth as ( select max(depth) from my_q )
-,
-depth_data as ( select depth, boss, jsonb_agg(data) as data from my_q group by depth, boss order by depth )
-,
+-- max_depth as ( select max(depth) from my_q )
+-- ,
+-- depth_data as ( select depth, boss, jsonb_agg(data) as data from my_q group by depth, boss order by depth )
+-- ,
 my_2q as (
   with recursive rec1 (dpth, d) as (
-    select max, (select jsonb_object_agg(depth_data.boss, depth_data.data) from depth_data where depth_data.depth = max_depth.max) as record from max_depth
+    -- select max, (select jsonb_object_agg(depth_data.boss, depth_data.data) from depth_data where depth_data.depth = max_depth.max) as record from max_depth
+    select max(depth) + 1, '{}'::jsonb from my_q
     -- select max_depth, (select jsonb_agg() from )
     union all
     select dpth - 1, (
@@ -41,8 +42,9 @@ my_2q as (
   select * from rec1
 )
 
-select d->'0'->0 from my_2q
-where dpth = 0
+select d->'0'->0 as result from my_2q where dpth = 0
+
+-- select * from my_2q
 
 -- select jsonb_object_agg(depth_data.boss, depth_data.data) from depth_data where depth_data.depth = 2
 
