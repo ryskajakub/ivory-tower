@@ -54,7 +54,7 @@ class Column<
   }
 }
 
-type AnyColumn = Column<any, any, any, any>
+type AnyColumn = Column<any, any, any, any>;
 
 type AnyStateColumn<aggState extends AggState> = Column<
   any,
@@ -243,7 +243,7 @@ type T = [][number];
 
 type C = [any, any];
 
-type QueryTableColumn = Expression<string, string, KnownPgType, "No">
+type QueryTableColumn = Expression<string, string, KnownPgType, "No">;
 
 type QTables = Record<string, [string, QueryTableColumn][]>;
 
@@ -277,7 +277,7 @@ type mkTables<
 //   >
 // >;
 
-type MkType<T extends TableColumn> =
+type mkColumnType<T extends TableColumn> =
   //   | (T extends "text" ? "text" : "int")
   //   | T extends { nullable: true }
   //   ? null
@@ -285,7 +285,6 @@ type MkType<T extends TableColumn> =
   T["type"] extends "text"
     ? "text"
     : "int" | (T["nullable"] extends true ? null : never);
-
 
 type mkQueryColumns<
   tableName extends string,
@@ -297,7 +296,10 @@ type mkQueryColumns<
       ...infer Rest extends C[]
     ]
   ? [
-      [columnName, Expression<tableName, columnName, columnData, "No">],
+      [
+        columnName,
+        Expression<tableName, columnName, mkColumnType<columnData>, "No">
+      ],
       ...mkQueryColumns<tableName, Rest>
     ]
   : never;
@@ -306,20 +308,11 @@ type mkQueryTables<Tables extends Record<string, any>> = {
   [K in keyof Tables]: K extends string ? mkQueryColumns<K, Tables[K]> : never;
 };
 
-// type TTT = 
+// type TTT =
 
 type QueriedTablesOutside = ExpandRecursively<
   mkQueryTables<mkMutable<typeof tables>>
 >;
-
-
-
-
-
-
-
-
-
 
 type IsSingle<Exps extends any[]> = Exps["length"] extends 1 ? never : unknown;
 
@@ -349,9 +342,11 @@ type getSubQueryExpressionType<
   Exps extends Selected
 > = [cols, rows] extends ["single", "single"] ? Exps[0] : unknown;
 
-// type 
+// type
 
-type getColsQuant<exps extends Selected> = exps["length"] extends 1 ? "single" : "multi"
+type getColsQuant<exps extends Selected> = exps["length"] extends 1
+  ? "single"
+  : "multi";
 
 class SubQuery<
   name extends string | null,
@@ -359,7 +354,7 @@ class SubQuery<
   rows extends SelectQuant
 > extends Expression<
   null,
-  name extends null ? '?column?' : name,
+  name extends null ? "?column?" : name,
   getSubQueryExpressionType<getColsQuant<Exps>, rows, Exps>,
   "No"
 > {
@@ -368,17 +363,21 @@ class SubQuery<
   subquery: "subquery";
 }
 
-type mkSelectedColumn<Col extends SingleSelectable> = Expression<Col["path"], Col["name"], Col["pgType"], "No">
+type mkSelectedColumn<Col extends SingleSelectable> = Expression<
+  Col["path"],
+  Col["name"],
+  Col["pgType"],
+  "No"
+>;
 
-type resetExpsAggStateGo<Exps extends Selectables> =
-  Exps["length"] extends 0
-    ? []
-    : Exps extends [
-        infer Head extends SingleSelectable,
-        ...infer Rest extends Selectables
-      ]
-    ? [mkSelectedColumn<Head>, ...resetExpsAggStateGo<Rest>]
-    : never;
+type resetExpsAggStateGo<Exps extends Selectables> = Exps["length"] extends 0
+  ? []
+  : Exps extends [
+      infer Head extends SingleSelectable,
+      ...infer Rest extends Selectables
+    ]
+  ? [mkSelectedColumn<Head>, ...resetExpsAggStateGo<Rest>]
+  : never;
 
 type ResetExpsAggState<Exps extends Selectables> = Exps extends [
   infer Head extends SingleSelectable,
@@ -409,10 +408,11 @@ interface OrderByArgs<
 //   };
 // }
 
-class Limit<
-  exps extends Selected,
-  rows extends SelectQuant
-> extends SubQuery<null, exps, rows> {
+class Limit<exps extends Selected, rows extends SelectQuant> extends SubQuery<
+  null,
+  exps,
+  rows
+> {
   limit: "limit";
 }
 
@@ -444,9 +444,11 @@ type unionSelectablesGo<exps extends Selectables> = exps["length"] extends 0
   ? [Expression<any, any, head["pgType"], "No">, ...unionSelectablesGo<rest>]
   : never;
 
-type unionSelectables<exps extends Selectables> = 
-    unionSelectablesGo<exps> extends Selected ? SubQuery<null, unionSelectablesGo<exps>, "multi"> : unknown
-    // unionSelectablesGo<exps> extends Selected
+type unionSelectables<exps extends Selectables> =
+  unionSelectablesGo<exps> extends Selected
+    ? SubQuery<null, unionSelectablesGo<exps>, "multi">
+    : unknown;
+// unionSelectablesGo<exps> extends Selected
 
 class Union<
   rows extends SelectQuant,
@@ -454,9 +456,7 @@ class Union<
   orderByArgs extends OrderByArgs | null
 > extends OrderBy<rows, exps, orderByArgs> {
   union: "union";
-  UNION = <T extends unionSelectables<exps>>(
-    x: T
-  ): Union<rows, exps, null> => {
+  UNION = <T extends unionSelectables<exps>>(x: T): Union<rows, exps, null> => {
     // @ts-ignore
     return null;
   };
@@ -470,7 +470,7 @@ type mkGroupByGo<
 > = Q["length"] extends 0
   ? Acc
   : Q extends [infer Head, ...infer Rest extends AnyGroupExp[]]
-  ? Head extends AnyGroupExp 
+  ? Head extends AnyGroupExp
     ? mkGroupByGo<
         Rest,
         {
@@ -487,11 +487,11 @@ type mkGroupBy<Q extends AnyGroupExp[]> = ExpandRecursively<mkGroupByGo<Q, {}>>;
 
 type NonEmptyArray<T> = [T, ...T[]];
 
-type SingleSelected = Expression<string, string, KnownPgType, "No">
+type SingleSelected = Expression<string, string, KnownPgType, "No">;
 
 type Selected = NonEmptyArray<SingleSelected>;
 
-type SingleSelectable = Selectables[number]
+type SingleSelectable = Selectables[number];
 
 type Selectables =
   | NonEmptyArray<AnyStateColumn<"No">>
@@ -523,7 +523,7 @@ class Data<
   fromItems: fromItems;
 }
 
-type AnyGroupExp = Expression<any, any, any, "No">
+type AnyGroupExp = Expression<any, any, any, "No">;
 
 class GroupBy<
   qTables extends QTables,
@@ -549,11 +549,9 @@ class Where<
   };
 }
 
-type secondElementsUnion<arr extends [string, any][]> = arr[number][1];
-
-// type TTT22 = keysUnion<[["abc", 123], ["def", "xxx"]]>
-
 type FromItems = [string, string][];
+
+type secondElementsUnion<arr extends FromItems> = arr[number][1];
 
 type mkFromNoAlias<
   qTables extends QTables,
@@ -568,8 +566,8 @@ type mkFromAlias<
   fromItems extends FromItems,
   T extends keyof qTables & string,
   A extends string
-> = A extends keyof secondElementsUnion<fromItems>
-  ? unknown
+> = A extends secondElementsUnion<fromItems>
+  ? [A, secondElementsUnion<fromItems>]
   : From<qTables, [...fromItems, [T, A]]>;
 
 type mkFrom<
@@ -633,12 +631,16 @@ const SELECT = <
 
 // type TTT = GroupBy<any> extends Join<any> ? true : false;
 
-type resetExp<exp extends Selectables[number]> = NameExp<exp["name"], exp["pgType"], "No">
+type resetExp<exp extends Selectables[number]> = NameExp<
+  exp["name"],
+  exp["pgType"],
+  "No"
+>;
 
-  // ? PathExp<exp["table"], exp["column"], exp["pgType"], "No">
-  // : exp extends AnyAliasExp
-  // ? AliasExp<exp["alias"], exp["pgType"], "No">
-  // : exp;
+// ? PathExp<exp["table"], exp["column"], exp["pgType"], "No">
+// : exp extends AnyAliasExp
+// ? AliasExp<exp["alias"], exp["pgType"], "No">
+// : exp;
 
 type resetExpsAggState<exps extends Selectables> = exps["length"] extends 1
   ? [resetExp<exps[0]>]
@@ -673,11 +675,7 @@ type mkSelect<
   Exps extends Selectables | Selectables[number],
   Datas extends Data<any, any, any>[]
 > = Datas["length"] extends 0
-  ? Union<
-      "single",
-      resetExpsAggState<wrapInArray<Exps>>,
-      null
-    >
+  ? Union<"single", resetExpsAggState<wrapInArray<Exps>>, null>
   : Datas["length"] extends 1
   ? Union<
       mkSelectRowQuant<wrapInArray<Exps>, Datas[0]>,
@@ -693,11 +691,18 @@ type mkFromTables<
   [K in T]: queryTables[T];
 };
 
+// type TTT = mkQueryTables<mkMutable<typeof tables>>
+
+// // type UUU = mkFromAlias<TTT, [], "person", "p">
+
+// // @ts-ignore
+// const t: TTT = null
+
 const mkDb = <Tables extends RawDbType>(tables: Tables) => {
   type QueryTables = mkQueryTables<mkMutable<Tables>>;
 
   return {
-    FROM: <T extends keyof Tables & string, A extends any[]>(
+    FROM: <T extends keyof Tables & string, const A extends any[]>(
       table: T,
       ...alias: A
     ): mkFrom<QueryTables, [], T, A> => {
@@ -736,16 +741,9 @@ type ColResult<Type extends PgType> = null extends Type
 //   [SelectedColumn<"name", "int">, SelectedColumn<"xxx", "text">]
 // >;
 
+const froms = FROM("pet", "p").FROM("person").GROUP_BY(x => [x.person.id]);
 
-
-
-
-
-
-
-
-const f = FROM("pet", "p")
-
+const f = SELECT((x) => max(x.p.id), froms);
 
 // const fff = SELECT(
 //   // (x) => [
@@ -757,6 +755,5 @@ const f = FROM("pet", "p")
 //     .WHERE((x) => x.person.id("=", x.p.owner_id))
 //   // .GROUP_BY((x) => [x.person.age, x.person.name])
 // )
-  // .UNION(mySelect)
-  // .UNION(mySelect);
-
+// .UNION(mySelect)
+// .UNION(mySelect);
