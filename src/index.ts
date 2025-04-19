@@ -66,7 +66,6 @@ type AnyColumn = AliasExpression<any, any, any>;
 type AnyStateColumn<aggState extends AggState> = AliasExpression<
   string,
   KnownPgType,
-  // PgType,
   aggState
 >;
 
@@ -108,15 +107,6 @@ type mkThat<operator extends Operator, pgType extends PgType> =
   | Exp<pgType, "No">
   | number
   | string;
-
-// type mkThat<operator extends Operator, pgType extends PgType> = [
-//   "+",
-//   "int"
-// ] extends [operator, "int"]
-//   ? Exp<pgType, "No">
-//   : ["-", "int"] extends [operator, "int"]
-//   ? Exp<pgType, "No">
-//   : Exp<"boolean", "No">;
 
 const binop = <
   thisOperand extends AnyExpression,
@@ -227,7 +217,7 @@ const JSONB_AGG = <T extends AnyAggregableExp>(exp: T): JsonbAggResult<T> => {
   return null;
 };
 
-type AAAA = JsonbAggResult<Expression<any, "int", "No">>["pgType"];
+// type AAAA = JsonbAggResult<Expression<any, "int", "No">>["pgType"];
 
 const MAX = <T extends AnyAggregableExp>(
   exp: T
@@ -643,18 +633,6 @@ type AnyTables = Record<string, any>;
 
 type AnyFromItems = Record<string, any>;
 
-// type mkJoin<
-//   qTables extends AnyTables,
-//   fromItems extends AnyTables,
-//   T extends keyof qTables
-// > =
-
-// Args extends readonly [infer T, infer Options extends { AS: string }]
-//   ? From<qTables, [...Selected, [T, Options["AS"]]]>
-//   : Args extends readonly [infer T]
-//   ? From<qTables, [...Selected, [T, T]]>
-//   : never;
-
 class Data<
   qTables extends QTables,
   fromItems extends FromItems,
@@ -916,7 +894,7 @@ const louoeaul = f
 
 const simpleFrom = SELECT((x) => [x.pet.nickname, x.pet.owner_id], FROM("pet"));
 
-const fromFrom = SELECT(x => x. , simpleFrom)
+// const fromFrom = SELECT(x => x. , simpleFrom)
 
 // type X = 'col' extends string ? 1 : 2
 
