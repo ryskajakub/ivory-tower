@@ -36,93 +36,136 @@ type mkOperatorResultType<
   operand2 extends PgType
 > = operand1 extends operand2 ? operand1 : unknown;
 
-class Column<
-  path extends string | null,
-  name extends string,
-  pgType extends PgType,
-  aggState extends AggState
-> {
-  path: path;
+class Col<out name extends string, out pgType extends PgType> {
   name: name;
   pgType: pgType;
-  aggState: aggState;
-  constructor(path: path, name: name, pgType: pgType, aggState: aggState) {
-    path = path;
-    name = name;
-    pgType = pgType;
-    aggState = aggState;
+  constructor(name: name, pgType: pgType) {
+    this.name = name;
+    this.pgType = pgType;
   }
 }
 
-type AnyColumn = Column<any, any, any, any>;
+class AliasExpression<
+  out name extends string,
+  pgType extends PgType,
+  aggState extends AggState
+> extends Col<name, pgType> {
+  classType: "column" = "column";
+  aggState: aggState;
+  constructor(name: name, pgType: pgType, aggState: aggState) {
+    super(name, pgType);
+    this.aggState = aggState;
+  }
+  toColumn = () => {
+    return new AliasExpression(this.name, this.pgType, this.aggState);
+  };
+}
 
-type AnyStateColumn<aggState extends AggState> = Column<
-  any,
+type AnyColumn = AliasExpression<any, any, any>;
+
+type AnyStateColumn<aggState extends AggState> = AliasExpression<
   string,
   KnownPgType,
+  // PgType,
   aggState
 >;
 
+type mkAggState<aggState extends AggState, thatAggState extends AggState> = [
+  aggState,
+  thatAggState
+] extends ["Post", "Pre"] | ["Pre", "Post"]
+  ? "Pre"
+  : [aggState, thatAggState] extends ["No", "Pre"] | ["Pre", "No"]
+  ? "Pre"
+  : [aggState, thatAggState] extends ["No", "Post"] | ["Post", "No"]
+  ? "Post"
+  : aggState;
+
+type thatToExp<that extends mkThat<any, any>> = that extends number
+  ? Expression<Unk, "int", "No">
+  : that extends string
+  ? Expression<Unk, "text", "No">
+  : that;
+
 type binaryOperation<
+  pgType extends PgType,
+  aggState extends AggState,
   operator extends Operator,
-  pgType extends PgType
+  that extends mkThat<any, any>
 > = operator extends "+" | "-"
-  ? Exp<pgType, "No">
-  : Exp<"boolean" | (null extends pgType ? null : unknown), "No">;
+  ? Exp<pgType, mkAggState<aggState, thatToExp<that>["aggState"]>>
+  : Exp<
+      "boolean" | (null extends pgType ? null : never),
+      mkAggState<aggState, thatToExp<that>["aggState"]>
+    >;
 
-type mkThat<operator extends Operator, pgType extends PgType> = [
-  "+",
-  "int"
-] extends [operator, "int"]
-  ? Exp<pgType, "No">
-  : ["-", "int"] extends [operator, "int"]
-  ? Exp<pgType, "No">
-  : Exp<"boolean", "No">;
+type mkThat<operator extends Operator, pgType extends PgType> =
+  | Exp<pgType, "No">
+  | number
+  | string;
 
-interface Operand<pgType extends PgType, aggState extends AggState> {
-  <operator extends Operator, that extends mkThat<operator, pgType>>(
-    operator: Operator,
-    that: that
-  ): binaryOperation<operator, pgType>;
-}
+// type mkThat<operator extends Operator, pgType extends PgType> = [
+//   "+",
+//   "int"
+// ] extends [operator, "int"]
+//   ? Exp<pgType, "No">
+//   : ["-", "int"] extends [operator, "int"]
+//   ? Exp<pgType, "No">
+//   : Exp<"boolean", "No">;
 
 class Expression<
-  path extends string | null,
-  name extends string,
+  out name extends string,
   pgType extends PgType,
   aggState extends AggState
-> extends Column<path, name, pgType, aggState> {
-  constructor(path: path, name: name, pgType: pgType, aggState: aggState) {
-    super(path, name, pgType, aggState);
+> extends AliasExpression<name, pgType, aggState> {
+  constructor(name: name, pgType: pgType, aggState: aggState) {
+    super(name, pgType, aggState);
   }
 
   AS = <alias extends string>(
     alias: alias
-  ): Column<path, alias, pgType, aggState> => {
+  ): AliasExpression<alias, pgType, aggState> => {
+    // @ts-ignore
+    return null;
+  };
+
+  op = <operator extends Operator, that extends mkThat<operator, pgType>>(
+    operator: operator,
+    that: that
+  ): binaryOperation<pgType, aggState, operator, that> => {
     // @ts-ignore
     return null;
   };
 }
 
+class PathExpression<
+  path extends string,
+  name extends string,
+  pgType extends PgType,
+  aggState extends AggState
+> extends Expression<name, pgType, aggState> {
+  path: path;
+  constructor(path: path, name: name, pgType: pgType, aggState: aggState) {
+    super(name, pgType, aggState);
+    this.path = path;
+  }
+}
+
 type Unk = "?column?";
 
-type AnyExpression = Expression<any, any, any, any>;
+type AnyExpression = Expression<any, any, any>;
 
 type Exp<pgType extends PgType, aggState extends AggState> = Expression<
-  null,
   Unk,
   pgType,
   aggState
 >;
 
-type NameExp<
-  name extends string,
-  pgType extends PgType,
-  aggState extends AggState
-> = Expression<any, name, pgType, aggState>;
-
 class JsonB<T> {
   t: T;
+  constructor(t: T) {
+    this.t = t;
+  }
 }
 
 type KnownPgType = "timestamp" | "boolean" | "int" | "text" | JsonB<any> | null;
@@ -143,7 +186,9 @@ type ToJsonType<T extends PgType> = MkJsTypeNoNull<T, "stringdate">;
 
 type MkJsonBArrayAggType<T extends PgType> = JsonB<ToJsonType<T>[]>;
 
-type MkJsTypeNoNull<T extends PgType, Timestamp> = T extends "int"
+// type Ttab = MkJsonBArrayAggType<"int">
+
+type MkJsTypeNoNull<T extends PgType, Timestamp = Date> = T extends "int"
   ? number
   : T extends "text"
   ? string
@@ -151,30 +196,32 @@ type MkJsTypeNoNull<T extends PgType, Timestamp> = T extends "int"
   ? boolean
   : T extends "timestamp"
   ? Timestamp
-  : T extends JsonB<infer U>
-  ? U
+  : T extends JsonB<any>
+  ? T["t"]
   : never;
 
-type ToJsType<T extends PgType, Timestamp = Date> = null extends infer TT
-  ? MkJsTypeNoNull<TT, Timestamp> | null
-  : MkJsTypeNoNull<T, Timestamp>;
+type ToJsType<T extends PgType, Timestamp = Date> = null extends T
+  ? MkJsTypeNoNull<Exclude<T, null>, Timestamp> | null
+  : MkJsTypeNoNull<Exclude<T, null>, Timestamp>;
 
-type JsonbAggResult<T extends Exp<PgType, "Pre" | "No">> = NameExp<
+type JsonbAggResult<T extends Exp<PgType, "Pre" | "No">> = Expression<
   "jsonb_agg",
   MkJsonBArrayAggType<T["pgType"]>,
   "Post"
 >;
 
-type AnyAggregableExp = Expression<any, any, KnownPgType, "Pre" | "No">;
+type AnyAggregableExp = Expression<any, KnownPgType, "Pre" | "No">;
 
 const jsonb_agg = <T extends AnyAggregableExp>(exp: T): JsonbAggResult<T> => {
   // @ts-ignore
   return null;
 };
 
+type AAAA = JsonbAggResult<Expression<any, "int", "No">>["pgType"];
+
 const max = <T extends AnyAggregableExp>(
   exp: T
-): NameExp<"max", T["pgType"], "Post"> => {
+): Expression<"max", T["pgType"], "Post"> => {
   // @ts-ignore
   return null;
 };
@@ -190,7 +237,7 @@ type MkJsonBuildObjectGo<
   Result,
   State extends AggState
 > = T["length"] extends 0
-  ? NameExp<"jsonb_build_object", JsonB<ExpandRecursively<Result>>, State>
+  ? Expression<"jsonb_build_object", JsonB<ExpandRecursively<Result>>, State>
   : T extends [
       infer Name extends string,
       infer E extends AnyExpression,
@@ -198,7 +245,7 @@ type MkJsonBuildObjectGo<
     ]
   ? MkJsonBuildObjectGo<
       Rest,
-      Result & { [K in Name]: MkJsonBType<E["pgType"]> },
+      Result & { [K in Name]: MkJsonBType<E["pgType"]>["t"] },
       State
     >
   : never;
@@ -212,12 +259,16 @@ const jsonb_build_object = <const T extends any[]>(
   return null;
 };
 
-type Lit = number | string;
+type Lit = number | string | object;
+
+// type MurMur =  extends object ? true : false;
 
 type MkLit<T extends Lit> = T extends number
-  ? Exp<"int", "No"> & Operand<"int", "No">
+  ? Expression<Unk, "int", "No">
   : T extends string
-  ? Exp<"text", "No"> & Operand<"text", "No">
+  ? Expression<Unk, "text", "No">
+  : T extends object
+  ? Expression<Unk, JsonB<T>, "No">
   : never;
 
 const lit = <T extends Lit>(t: T): MkLit<T> => {
@@ -235,7 +286,6 @@ interface TableColumn {
 }
 
 type QueriedTableType = [string, SingleSelected][];
-// type QueriedTablesType = Record<string, QueriedTableType>;
 
 type mkColumns<
   table extends QueriedTableType,
@@ -249,13 +299,13 @@ type mkColumns<
     ]
   ? {
       [K in ColName]: agg extends true
-        ? Expression<
+        ? PathExpression<
             ColName,
             ColType["name"],
             ColType["pgType"],
             ColName extends aggColumns ? "Post" : "Pre"
           >
-        : ColType;
+        : Expression<ColType["name"], ColType["pgType"], "No">;
     } & mkColumns<Rest, agg, aggColumns>
   : never;
 
@@ -263,7 +313,9 @@ type T = [][number];
 
 type C = [any, any];
 
-type QTables = Record<string, [string, SingleSelected][]>;
+type TableCol = Col<any, KnownPgType>;
+
+type QTables = Record<string, [string, TableCol][]>;
 
 type mkTables<
   qTables extends QTables,
@@ -329,10 +381,7 @@ type mkQueryColumns<
       ...infer Rest extends C[]
     ]
   ? [
-      [
-        columnName,
-        Expression<tableName, columnName, mkColumnType<columnData>, "No">
-      ],
+      [columnName, Col<columnName, mkColumnType<columnData>>],
       ...mkQueryColumns<tableName, Rest>
     ]
   : never;
@@ -373,7 +422,13 @@ type getSubQueryExpressionType<
   cols extends SelectQuant,
   rows extends SelectQuant,
   Exps extends Selected
-> = [cols, rows] extends ["single", "single"] ? Exps[0] : unknown;
+> = [cols, rows] extends ["single", "single"] ? Exps[0]["pgType"] : unknown;
+
+type getSubQueryExpressionName<
+  cols extends SelectQuant,
+  rows extends SelectQuant,
+  Exps extends Selected
+> = [cols, rows] extends ["single", "single"] ? Exps[0]["name"] : Unk;
 
 // type
 
@@ -383,21 +438,26 @@ type getColsQuant<exps extends Selected> = exps["length"] extends 1
 
 class SubQuery<
   name extends string | null,
-  Exps extends Selected,
+  out Exps extends Selected,
   rows extends SelectQuant
 > extends Expression<
-  null,
-  name extends null ? Unk : name,
+  name extends null
+    ? getSubQueryExpressionName<getColsQuant<Exps>, rows, Exps>
+    : name,
   getSubQueryExpressionType<getColsQuant<Exps>, rows, Exps>,
   "No"
 > {
   rows: rows;
-  name1: name;
-  subquery: "subquery";
+  subquery: "subquery" = "subquery";
+
+  constructor(rows: rows, name: name) {
+    // @ts-ignore
+    super(name, null as unknown, "No");
+    this.rows = rows;
+  }
 }
 
 type mkSelectedColumn<Col extends SingleSelectable> = Expression<
-  Col["path"],
   Col["name"],
   Col["pgType"],
   "No"
@@ -419,12 +479,11 @@ type ResetExpsAggState<Exps extends Selectables> = Exps extends [
   ? [mkSelectedColumn<Head>, ...resetExpsAggStateGo<Rest>]
   : never;
 
-class Limit<exps extends Selected, rows extends SelectQuant> extends SubQuery<
-  null,
-  exps,
-  rows
-> {
-  limit: "limit";
+class Limit<
+  out exps extends Selected,
+  rows extends SelectQuant
+> extends SubQuery<null, exps, rows> {
+  limit: "limit" = "limit";
 }
 
 type AnyData = Data<any, any, any>;
@@ -439,9 +498,9 @@ type mkOrderTables<
 class OrderBy<
   data extends Data<any, any, any> | null,
   rows extends SelectQuant,
-  exps extends Selected
+  out exps extends Selected
 > extends Limit<exps, rows> {
-  orderBy: "orderBy";
+  orderBy: "orderBy" = "orderBy";
   ORDER_BY = <Q extends Selectables>(
     f: (x: mkOrderTables<exps, data>) => Q
   ) => {
@@ -450,34 +509,34 @@ class OrderBy<
   };
 }
 
-// type UnionCol = Selectables[number] | LitExp<any, any>
+type queryType<exps extends SingleSelected[]> = exps extends [
+  infer head extends SingleSelected,
+  ...infer tail extends SingleSelected[]
+]
+  ? [[head["name"], ToJsType<head["pgType"]>], ...queryType<tail>]
+  : [];
 
-type unionSelectablesGo<exps extends Selectables> = exps["length"] extends 0
-  ? [Expression<any, any, exps[0]["pgType"], "No">]
-  : exps extends [
-      infer head extends Exp<any, any>,
-      ...infer rest extends Selectables
-    ]
-  ? [Expression<any, any, head["pgType"], "No">, ...unionSelectablesGo<rest>]
-  : never;
-
-type unionSelectables<exps extends Selectables> =
-  unionSelectablesGo<exps> extends Selected
-    ? SubQuery<null, unionSelectablesGo<exps>, "multi">
-    : unknown;
-// unionSelectablesGo<exps> extends Selected
+type unionSelectables<exps extends SingleSelected[]> = exps extends [
+  infer head extends SingleSelected,
+  ...infer tail extends SingleSelected[]
+]
+  ? [Col<string, head["pgType"]>, ...unionSelectables<tail>]
+  : [];
 
 class Union<
   data extends Data<any, any, any> | null,
-  // qTables extends QTables,
-  // fromItems extends FromItems,
   rows extends SelectQuant,
-  exps extends Selected
+  out exps extends Selected
 > extends OrderBy<data, rows, exps> {
-  union: "union";
-  UNION = <T extends unionSelectables<exps>>(
+  union: "union" = "union";
+  // UNION = <T extends Union<any, any, unionSelectables<exps>>>(
+  UNION = <T extends Union<any, any, [Col<string, "int">]>>(
     x: T
   ): OrderBy<null, rows, exps> => {
+    // @ts-ignore
+    return null;
+  };
+  toType = (): ExpandRecursively<queryType<exps>> => {
     // @ts-ignore
     return null;
   };
@@ -508,15 +567,15 @@ type mkGroupBy<Q extends AnyGroupExp[]> = ExpandRecursively<mkGroupByGo<Q, {}>>;
 
 type NonEmptyArray<T> = [T, ...T[]];
 
-type SingleSelected = Expression<any, string, KnownPgType, "No">;
+type SingleSelected = Col<string, KnownPgType>;
 
 type Selected = NonEmptyArray<SingleSelected>;
 
 type SingleSelectable = Selectables[number];
 
 type Selectables =
-  | NonEmptyArray<AnyStateColumn<"No">>
-  | NonEmptyArray<AnyStateColumn<"Post">>;
+  | NonEmptyArray<AliasExpression<any, KnownPgType, "No">>
+  | NonEmptyArray<AliasExpression<any, KnownPgType, "Post">>;
 
 type AnyTables = Record<string, any>;
 
@@ -542,9 +601,14 @@ class Data<
   grouped: grouped;
   qTables: qTables;
   fromItems: fromItems;
+  constructor(grouped: grouped, qTables: qTables, fromItems: fromItems) {
+    this.grouped = grouped;
+    this.qTables = qTables;
+    this.fromItems = fromItems;
+  }
 }
 
-type AnyGroupExp = Expression<any, any, any, "No">;
+type AnyGroupExp = PathExpression<any, any, any, "No">;
 
 class GroupBy<
   qTables extends QTables,
@@ -652,10 +716,10 @@ const SELECT = <
 
 // type TTT = GroupBy<any> extends Join<any> ? true : false;
 
-type resetExp<exp extends Selectables[number]> = NameExp<
+// type resetExp<exp extends Selectables[number]> = never
+type resetExp<exp extends Selectables[number]> = Col<
   exp["name"],
-  exp["pgType"],
-  "No"
+  exp["pgType"]
 >;
 
 // ? PathExp<exp["table"], exp["column"], exp["pgType"], "No">
@@ -762,15 +826,46 @@ type ColResult<Type extends PgType> = null extends Type
 //   [SelectedColumn<"name", "int">, SelectedColumn<"xxx", "text">]
 // >;
 
-const froms = FROM("pet", "p").FROM("person");
+const froms = FROM("pet", "p").FROM("person", "p2");
 
-const f = SELECT((x) => [max(x.p.id), max(x.person.age)], froms).ORDER_BY(
-  (x) => [x.person.age]
+// const t = jsonb_build_object('age', lit(5))
+
+// type lol = ExpandRecursively<typeof t["pgType"]>
+
+const f = SELECT(
+  (x) => [
+    // max(x.p2.age.op("-", lit(5))).op("+", lit(1)),
+    max(x.p2.age),
+    // jsonb_agg(jsonb_build_object("age", x.p2.age)),
+  ],
+  froms
 );
 
-const res = lit(555)("=", lit(132))
+// const l = lit([{ age: 3 }]);
 
-const x = SELECT((x) => lit(555)("=", lit(123)));
+const s = SELECT([lit(3)]);
+
+// type Mňo = typeof s extends Union<any, any, [Col<string, "int">]> ? 1 : 2;
+
+const louoeaul = f.UNION(s);
+
+// type X = 'col' extends string ? 1 : 2
+
+// const x = jsonb_agg()
+
+// const t = f.UNION( SELECT([lit(1), ]) )
+
+// type Exp1<T> = T extends Union<any, any, any> ? T : never
+
+// type T123 = Exp1<typeof f>
+
+// const q = SELECT(
+//   (x) => [max(x.person.id), jsonb_agg(x.person.age)],
+//   FROM("person")
+// ).toType();
+
+// const u = SELECT([lit(132).AS("abc"), q]);
+// const u = SELECT([q, res]);
 
 // const fff = SELECT(
 //   // (x) => [
