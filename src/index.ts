@@ -28,7 +28,7 @@ type mkMutableShallow<T> = {
 
 type AggState = "Pre" | "Post" | "No";
 
-type Operator = "=" | ">=" | ">";
+type Operator = "=" | ">=" | ">" | "+" | "-";
 
 type mkOperatorResultType<
   operand1 extends PgType,
@@ -63,6 +63,29 @@ type AnyStateColumn<aggState extends AggState> = Column<
   aggState
 >;
 
+type binaryOperation<
+  operator extends Operator,
+  pgType extends PgType
+> = operator extends "+" | "-"
+  ? Exp<pgType, "No">
+  : Exp<"boolean" | (null extends pgType ? null : unknown), "No">;
+
+type mkThat<operator extends Operator, pgType extends PgType> = [
+  "+",
+  "int"
+] extends [operator, "int"]
+  ? Exp<pgType, "No">
+  : ["-", "int"] extends [operator, "int"]
+  ? Exp<pgType, "No">
+  : Exp<"boolean", "No">;
+
+interface Operand<pgType extends PgType, aggState extends AggState> {
+  <operator extends Operator, that extends mkThat<operator, pgType>>(
+    operator: Operator,
+    that: that
+  ): binaryOperation<operator, pgType>;
+}
+
 class Expression<
   path extends string | null,
   name extends string,
@@ -72,27 +95,16 @@ class Expression<
   constructor(path: path, name: name, pgType: pgType, aggState: aggState) {
     super(path, name, pgType, aggState);
   }
-  __call<operator extends Operator, T extends AggState>(
-    operator: operator,
-    that: Expression<any, any, PgType, T>
-  ): Expression<
-    null,
-    "?column?",
-    mkOperatorResultType<pgType, operator, (typeof that)["pgType"]>,
-    "No"
-  > {
+
+  AS = <alias extends string>(
+    alias: alias
+  ): Column<path, alias, pgType, aggState> => {
     // @ts-ignore
     return null;
-  }
-
-  AS = <alias extends string>(alias: alias): Column<path, alias, pgType, aggState> => {
-    // @ts-ignore
-    return null
-  }
-
+  };
 }
 
-type Unk = '?column?'
+type Unk = "?column?";
 
 type AnyExpression = Expression<any, any, any, any>;
 
@@ -203,12 +215,12 @@ const jsonb_build_object = <const T extends any[]>(
 type Lit = number | string;
 
 type MkLit<T extends Lit> = T extends number
-  ? Exp<"int", "No">
+  ? Exp<"int", "No"> & Operand<"int", "No">
   : T extends string
-  ? Exp<"text", "No">
+  ? Exp<"text", "No"> & Operand<"text", "No">
   : never;
 
-const mkLit = <T extends Lit>(t: T): MkLit<T> => {
+const lit = <T extends Lit>(t: T): MkLit<T> => {
   // @ts-ignore
   return null;
 };
@@ -375,7 +387,7 @@ class SubQuery<
   rows extends SelectQuant
 > extends Expression<
   null,
-  name extends null ? "?column?" : name,
+  name extends null ? Unk : name,
   getSubQueryExpressionType<getColsQuant<Exps>, rows, Exps>,
   "No"
 > {
@@ -756,7 +768,9 @@ const f = SELECT((x) => [max(x.p.id), max(x.person.age)], froms).ORDER_BY(
   (x) => [x.person.age]
 );
 
-const x = SELECT(x => [mkLit("555").AS("trololo")])
+const res = lit(555)("=", lit(132))
+
+const x = SELECT((x) => lit(555)("=", lit(123)));
 
 // const fff = SELECT(
 //   // (x) => [
