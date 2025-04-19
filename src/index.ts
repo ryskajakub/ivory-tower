@@ -333,6 +333,7 @@ type mkColumns<
             ColType["pgType"],
             ColName extends aggColumns ? "Post" : "Pre"
           >
+        // : Expression<nonDuplicatedKeys, ColType["pgType"], "No">;
         : Expression<ColType["name"], ColType["pgType"], "No">;
     } & mkColumns<Rest, nonDuplicatedKeys, agg, aggColumns>
   : never;
@@ -352,18 +353,30 @@ type mkTables<
   qTables extends QTables,
   fromItems extends FromItems,
   group extends Record<string, string[]> = {}
-> = mkTablesNested<qTables, fromItems, group>;
+> = mkTablesNested<qTables, fromItems, fromItems, group>;
+
+type allFields<
+  qTables extends QTables,
+  fromItems extends FromItems
+> = fromItems extends [
+  infer head extends [infer tableName extends keyof qTables, any],
+  ...infer tail extends FromItems
+]
+  ? [...qTables[head[0]], ...allFields<qTables, tail>]
+  : [];
 
 type mkTablesNested<
   qTables extends QTables,
   fromItems extends FromItems,
+  allFromItems extends FromItems,
   group extends Record<string, string[]>
-> = fromItems["length"] extends 0
+> = //removeDuplicated<allFields<qTables, fromItems>>[number]
+fromItems["length"] extends 0
   ? {}
   : fromItems extends [
       infer head extends [
-        infer tableName extends keyof qTables,
-        infer tableAlias extends string
+        keyof qTables,
+        string
       ],
       ...infer rest extends FromItems
     ]
@@ -374,7 +387,14 @@ type mkTablesNested<
         {} extends group ? false : true,
         k extends keyof group ? group[k][number] : never
       >;
-    } & mkTablesNested<qTables, rest, group>
+    } & mkColumns<
+      qTables[head[0]],
+      removeDuplicated<allFields<qTables, allFromItems>>[number],
+      {} extends group ? false : true,
+      // k extends keyof group ? group[k][number] : never
+      never
+    > &
+      mkTablesNested<qTables, rest, allFromItems, group>
   : unknown;
 
 type withName<exps extends SingleSelected[]> = exps extends [
@@ -475,7 +495,9 @@ class AliasSubquery<
   exps extends Selected,
   rows extends SelectQuant
 > extends AliasExpression<
-  alias extends null ? getSubQueryExpressionName<getColsQuant<exps>, rows, exps> : alias,
+  alias extends null
+    ? getSubQueryExpressionName<getColsQuant<exps>, rows, exps>
+    : alias,
   getSubQueryExpressionType<getColsQuant<exps>, rows, exps>,
   "No"
 > {
@@ -483,9 +505,9 @@ class AliasSubquery<
   rows: rows;
   constructor(exps: exps, rows: rows) {
     // @ts-ignore
-    super()
-    this.exps = exps 
-    this.rows = rows
+    super();
+    this.exps = exps;
+    this.rows = rows;
   }
 }
 
@@ -499,8 +521,8 @@ class SubQuery<
   }
   AS = <name extends string>(name: name): AliasSubquery<name, exps, rows> => {
     // @ts-ignore
-    return null
-  }
+    return null;
+  };
   toType = (): ExpandRecursively<queryType<exps>> => {
     // @ts-ignore
     return null;
@@ -868,31 +890,35 @@ type ColResult<Type extends PgType> = null extends Type
 
 const froms = FROM("pet", "p").FROM("person", "p2");
 
+const ttt = SELECT(x => x., froms)
+
 // const t = jsonb_build_object('age', lit(5))
 
 // type lol = ExpandRecursively<typeof t["pgType"]>
 
-const f = SELECT(
-  (x) => [
-    MAX(binop(x.p2.age, "+", 5)),
-    MAX(x.p2.age).AS("lol"),
-    // JSONB_AGG(JSONB_BUILD_OBJECT("age", x.p2.age)),
-  ],
-  froms
-);
+// const f = SELECT(
+//   (x) => [
+//     MAX(binop(x.p2.age, "+", 5)),
+//     MAX(x.p2.age).AS("lol"),
+//     // JSONB_AGG(JSONB_BUILD_OBJECT("age", x.p2.age)),
+//   ],
+//   froms
+// );
 
-// const l = lit([{ age: 3 }]);
+// // const l = lit([{ age: 3 }]);
 
-// const s = SELECT([lit(3), lit(5), lit([{ age: 5 }, { age: 8 }])]);
-const s = SELECT([lit(5), lit(3)]);
+// // const s = SELECT([lit(3), lit(5), lit([{ age: 5 }, { age: 8 }])]);
+// const s = SELECT([lit(5), lit(3)]);
 
-const louoeaul = f
-  .UNION(s)
-  .ORDER_BY((x) => [x.lol])
-  .LIMIT(1)
-  .AS("myquery");
+// const s2 = SELECT((x) => x.person.age, FROM("person"));
 
-const simpleFrom = SELECT((x) => [x.pet.nickname, x.pet.owner_id], FROM("pet"));
+// const louoeaul = f
+//   .UNION(s)
+//   .ORDER_BY((x) => [x.lol])
+//   .LIMIT(1)
+//   .AS("myquery");
+
+// const simpleFrom = SELECT((x) => [x.pet.nickname, x.pet.owner_id, x.owner_id], FROM("pet").FROM("person"));
 
 // const fromFrom = SELECT(x => x. , simpleFrom)
 
