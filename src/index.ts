@@ -217,7 +217,7 @@ const JSONB_AGG = <T extends AnyAggregableExp>(exp: T): JsonbAggResult<T> => {
   return null;
 };
 
-// type AAAA = JsonbAggResult<Expression<any, "int", "No">>["pgType"];
+type AAAA = JsonbAggResult<Expression<any, "int", "No">>["pgType"];
 
 const MAX = <T extends AnyAggregableExp>(
   exp: T
