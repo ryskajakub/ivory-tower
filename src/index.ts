@@ -178,9 +178,9 @@ class JsonB<T> {
   }
 }
 
-type KnownPgType = "timestamp" | "boolean" | "int" | "text" | JsonB<any> | null;
+type KnownPgType = "timestamp" | "boolean" | "int" | "text" | JsonB<any> | null | [KnownPgType, ...KnownPgType[]];
 
-type PgType = KnownPgType | unknown;
+type PgType = KnownPgType
 
 // type MkJsonBArrayAggType<T extends PgType> = T extends "int"
 //   ? JsonB<number[]>
