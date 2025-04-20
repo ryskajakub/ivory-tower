@@ -45,11 +45,21 @@ class Col<name extends string, pgType extends PgType> {
   }
 }
 
-class AliasExpression<
+interface AliasExpression<
   name extends string,
   pgType extends PgType,
   aggState extends AggState
-> extends Col<name, pgType> {
+> {
+  name: name
+  pgType: pgType
+  aggState: aggState
+}
+
+class AliasExpressionClass<
+  name extends string,
+  pgType extends PgType,
+  aggState extends AggState
+> extends Col<name, pgType> implements AliasExpression<name, pgType, aggState> {
   classType: "column" = "column";
   aggState: aggState;
   constructor(name: name, pgType: pgType, aggState: aggState) {
@@ -57,13 +67,13 @@ class AliasExpression<
     this.aggState = aggState;
   }
   toColumn = () => {
-    return new AliasExpression(this.name, this.pgType, this.aggState);
+    return new AliasExpressionClass(this.name, this.pgType, this.aggState);
   };
 }
 
-type AnyColumn = AliasExpression<any, any, any>;
+type AnyColumn = AliasExpressionClass<any, any, any>;
 
-type AnyStateColumn<aggState extends AggState> = AliasExpression<
+type AnyStateColumn<aggState extends AggState> = AliasExpressionClass<
   string,
   KnownPgType,
   aggState
@@ -125,14 +135,14 @@ class Expression<
   name extends string,
   pgType extends PgType,
   aggState extends AggState
-> extends AliasExpression<name, pgType, aggState> {
+> extends AliasExpressionClass<name, pgType, aggState> {
   constructor(name: name, pgType: pgType, aggState: aggState) {
     super(name, pgType, aggState);
   }
 
   AS = <alias extends string>(
     alias: alias
-  ): AliasExpression<alias, pgType, aggState> => {
+  ): AliasExpressionClass<alias, pgType, aggState> => {
     // @ts-ignore
     return null;
   };
@@ -365,14 +375,10 @@ type mkTablesNested<
   fromItems extends FromItems,
   allFromItems extends FromItems,
   group extends Record<string, string[]>
-> =
-fromItems["length"] extends 0
+> = fromItems["length"] extends 0
   ? {}
   : fromItems extends [
-      infer head extends [
-        keyof qTables,
-        string
-      ],
+      infer head extends [keyof qTables, string],
       ...infer rest extends FromItems
     ]
   ? {
@@ -472,17 +478,43 @@ type getColsQuant<exps extends Selected> = exps["length"] extends 1
   ? "single"
   : "multi";
 
+type selectedToExpressions<exps extends Selected> =
+  exps extends [infer col, ...infer rest extends Selected] ? [[exps[0]["name"], col], ...selectedToExpressions<rest>] : []
+
+class Data<
+  qTables extends QTables,
+  fromItems extends FromItems,
+  grouped extends Record<string, string[]>
+> {
+  grouped: grouped;
+  qTables: qTables;
+  fromItems: fromItems;
+  constructor(grouped: grouped, qTables: qTables, fromItems: fromItems) {
+    this.grouped = grouped;
+    this.qTables = qTables;
+    this.fromItems = fromItems;
+  }
+}
+
 class AliasSubquery<
-  alias extends string | null,
+  alias extends string | 0,
   exps extends Selected,
   rows extends SelectQuant
-> extends AliasExpression<
-  alias extends null
+> extends Data<{ [k in alias]: selectedToExpressions<exps> }, [alias extends 0 ? [0, 0] : [alias, alias]], {} > implements AliasExpression<
+  alias extends 0
     ? getSubQueryExpressionName<getColsQuant<exps>, rows, exps>
     : alias,
   getSubQueryExpressionType<getColsQuant<exps>, rows, exps>,
   "No"
 > {
+
+  // @ts-ignore
+  name: name
+  // @ts-ignore
+  pgType: pgType
+  // @ts-ignore
+  aggState: aggState
+
   exps: exps;
   rows: rows;
   constructor(exps: exps, rows: rows) {
@@ -496,7 +528,7 @@ class AliasSubquery<
 class SubQuery<
   exps extends Selected,
   rows extends SelectQuant
-> extends AliasSubquery<null, exps, rows> {
+> extends AliasSubquery<0, exps, rows> {
   subquery: "subquery" = "subquery";
   constructor(exps: exps, rows: rows) {
     super(exps, rows);
@@ -630,27 +662,12 @@ type Selected = NonEmptyArray<SingleSelected>;
 type SingleSelectable = Selectables[number];
 
 type Selectables =
-  | NonEmptyArray<AliasExpression<any, KnownPgType, "No">>
-  | NonEmptyArray<AliasExpression<any, KnownPgType, "Post">>;
+  | NonEmptyArray<AliasExpressionClass<any, KnownPgType, "No">>
+  | NonEmptyArray<AliasExpressionClass<any, KnownPgType, "Post">>;
 
 type AnyTables = Record<string, any>;
 
 type AnyFromItems = Record<string, any>;
-
-class Data<
-  qTables extends QTables,
-  fromItems extends FromItems,
-  grouped extends Record<string, string[]>
-> {
-  grouped: grouped;
-  qTables: qTables;
-  fromItems: fromItems;
-  constructor(grouped: grouped, qTables: qTables, fromItems: fromItems) {
-    this.grouped = grouped;
-    this.qTables = qTables;
-    this.fromItems = fromItems;
-  }
-}
 
 type AnyGroupExp = PathExpression<any, any, any, "No">;
 
@@ -678,7 +695,15 @@ class Where<
   };
 }
 
-type FromItems = [string, string][];
+type Aliased = [string, string]
+
+type NonAliased = string
+
+type AnonymousAliased = [number, string]
+
+type AnonymousNonAliased = number
+
+type FromItems = ([string, string] | [number, string] | [number, number])[];
 
 type secondElementsUnion<arr extends FromItems> = arr[number][1];
 
@@ -702,26 +727,17 @@ type mkFromAlias<
 type mkFrom<
   qTables extends QTables,
   fromItems extends FromItems,
-  T extends keyof qTables & string,
-  A extends string[]
-> = A["length"] extends 0
-  ? mkFromNoAlias<qTables, fromItems, T>
-  : A["length"] extends 1
-  ? mkFromAlias<qTables, fromItems, T, A[0]>
-  : unknown;
+  fromItem extends FromTableAlias<any, any>,
+> = fromItem extends FromTable<any, any> ?
+  mkFromNoAlias<qTables, fromItems, fromItem["name"]> :
+  fromItem extends FromTableAlias<string, any> ?
+  mkFromAlias<qTables, fromItems, fromItem["name"], fromItem["alias"]> :
+  unknown
 
 class From<
   qTables extends AnyTables,
   fromItems extends FromItems
-> extends Where<qTables, fromItems> {
-  FROM<const T extends keyof qTables & string, const A extends string[]>(
-    table: T,
-    ...alias: A
-  ): mkFrom<qTables, fromItems, T, A> {
-    // @ts-ignore
-    return null;
-  }
-}
+> extends Where<qTables, fromItems> { }
 
 type TypescriptLit = string | number;
 
@@ -801,14 +817,43 @@ type mkFromTables<
   [K in T]: queryTables[T];
 };
 
+class FromTableAlias<alias extends null | string, name extends string> {
+  alias: alias;
+  name: name;
+  constructor(alias: alias, name: name) {
+    this.name = name;
+    this.alias = alias;
+  }
+}
+
+class FromTable<
+  alias extends null | string,
+  name extends string
+> extends FromTableAlias<alias, name> {
+  constructor(alias: alias, name: name) {
+    super(alias, name);
+  }
+  AS = <newAlias extends string>(
+    newAlias: newAlias
+  ): FromTableAlias<newAlias, name> => {
+    // @ts-ignore
+    return null;
+  };
+}
+
+type mkTableKeys<rec extends Record<string, any>> = {
+  [k in keyof rec]: k extends string ? FromTable<null, k> : never
+};
+
+type mkMkFrom<fromItem extends (($: mkTableKeys<QueryTables>) => FromTableAlias<any, any> | Union<any, any, any>)>
+
 const mkDb = <Tables extends RawDbType>(tables: Tables) => {
   type QueryTables = mkQueryTables<mkMutable<Tables>>;
 
   return {
-    FROM: <T extends keyof Tables & string, const A extends any[]>(
-      table: T,
-      ...alias: A
-    ): mkFrom<QueryTables, [], T, A> => {
+    FROM: <fromItem extends (($: mkTableKeys<QueryTables>) => FromTableAlias<any, any> | Union<any, any, any>)>(
+      fromItem: fromItem 
+    ): mkMkFrom<fromItem> => {
       // @ts-ignore
       return null;
     },
@@ -844,9 +889,10 @@ type ColResult<Type extends PgType> = null extends Type
 //   [SelectedColumn<"name", "int">, SelectedColumn<"xxx", "text">]
 // >;
 
-const froms = FROM("pet", "p").FROM("person", "p2");
+// const froms = FROM("pet", "p").FROM("person", "p2");
+const froms = FROM($ => $.pet.AS("p2"))
 
-const ttt = SELECT(x => x, froms)
+const ttt = SELECT((x) => x.p2.nickname, froms);
 
 // const t = jsonb_build_object('age', lit(5))
 
