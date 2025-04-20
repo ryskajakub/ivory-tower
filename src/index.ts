@@ -333,7 +333,6 @@ type mkColumns<
             ColType["pgType"],
             ColName extends aggColumns ? "Post" : "Pre"
           >
-        // : Expression<nonDuplicatedKeys, ColType["pgType"], "No">;
         : Expression<ColType["name"], ColType["pgType"], "No">;
     } & mkColumns<Rest, nonDuplicatedKeys, agg, aggColumns>
   : never;
@@ -370,7 +369,7 @@ type mkTablesNested<
   fromItems extends FromItems,
   allFromItems extends FromItems,
   group extends Record<string, string[]>
-> = //removeDuplicated<allFields<qTables, fromItems>>[number]
+> =
 fromItems["length"] extends 0
   ? {}
   : fromItems extends [
@@ -391,8 +390,7 @@ fromItems["length"] extends 0
       qTables[head[0]],
       removeDuplicated<allFields<qTables, allFromItems>>[number],
       {} extends group ? false : true,
-      // k extends keyof group ? group[k][number] : never
-      never
+      head[1] extends keyof group ? group[head[1]][number] : never
     > &
       mkTablesNested<qTables, rest, allFromItems, group>
   : unknown;
@@ -409,16 +407,6 @@ type mkTablesExp<exps extends Selected> = mkTables<
   [["union", "union"]],
   {}
 >;
-
-// type MkT = mkTablesExp<[NameExp<"xxx" ,"int", "No">]>
-
-// type TTTT = ExpandRecursively<
-//   mkTables<
-//     mkQueryTables<mkMutable<typeof tables>>,
-//     [["person", "p"], ["pet", "pet"]],
-//     {}
-//   >
-// >;
 
 type mkColumnType<T extends TableColumn> =
   //   | (T extends "text" ? "text" : "int")
@@ -890,7 +878,7 @@ type ColResult<Type extends PgType> = null extends Type
 
 const froms = FROM("pet", "p").FROM("person", "p2");
 
-const ttt = SELECT(x => x., froms)
+const ttt = SELECT(x => x, froms)
 
 // const t = jsonb_build_object('age', lit(5))
 
