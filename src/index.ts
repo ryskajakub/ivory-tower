@@ -261,8 +261,6 @@ const JSONB_BUILD_OBJECT = <const T extends any[]>(
 
 type Lit = number | string | object;
 
-// type MurMur =  extends object ? true : false;
-
 type MkLit<T extends Lit> = T extends number
   ? Expression<Unk, "int", "No">
   : T extends string
@@ -298,8 +296,6 @@ type removeDuplicated<
     ? removeDuplicated<rest, duplicates | head[0]>
     : [head[0], ...removeDuplicated<rest, duplicates>]
   : [];
-
-// type rd = removeDuplicated<[["a", "b"], ["a", "d"], ["b", "d"], ["c", "x"]]>
 
 type X = mkColumns<
   [
@@ -435,8 +431,6 @@ type mkQueryColumns<
 type mkQueryTables<Tables extends Record<string, any>> = {
   [K in keyof Tables]: K extends string ? mkQueryColumns<K, Tables[K]> : never;
 };
-
-// type TTT =
 
 type QueriedTablesOutside = ExpandRecursively<
   mkQueryTables<mkMutable<typeof tables>>
@@ -716,13 +710,6 @@ type mkFrom<
   ? mkFromAlias<qTables, fromItems, T, A[0]>
   : unknown;
 
-// type ABC1 = mkFrom<QueriedTablesOutside, [], "person", []>;
-
-// @ts-ignore
-const xxx: ABC1 = null;
-
-// xxx.WHERE(x => x.)
-
 class From<
   qTables extends AnyTables,
   fromItems extends FromItems
@@ -735,10 +722,6 @@ class From<
     return null;
   }
 }
-
-// const l =
-
-// type MkSelect1<T extends NoAggSelectables> = Union<QTables extends AnyTables, selectedDone extends SelectedDone> ;
 
 type TypescriptLit = string | number;
 
@@ -764,18 +747,10 @@ const SELECT = <
   return null;
 };
 
-// type TTT = GroupBy<any> extends Join<any> ? true : false;
-
-// type resetExp<exp extends Selectables[number]> = never
 type resetExp<exp extends Selectables[number]> = Col<
   exp["name"],
   exp["pgType"]
 >;
-
-// ? PathExp<exp["table"], exp["column"], exp["pgType"], "No">
-// : exp extends AnyAliasExp
-// ? AliasExp<exp["alias"], exp["pgType"], "No">
-// : exp;
 
 type resetExpsAggState<exps extends Selectables> = exps["length"] extends 1
   ? [resetExp<exps[0]>]
@@ -825,13 +800,6 @@ type mkFromTables<
 > = {
   [K in T]: queryTables[T];
 };
-
-// type TTT = mkQueryTables<mkMutable<typeof tables>>
-
-// // type UUU = mkFromAlias<TTT, [], "person", "p">
-
-// // @ts-ignore
-// const t: TTT = null
 
 const mkDb = <Tables extends RawDbType>(tables: Tables) => {
   type QueryTables = mkQueryTables<mkMutable<Tables>>;
